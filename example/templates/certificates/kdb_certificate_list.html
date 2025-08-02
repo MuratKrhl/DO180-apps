@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}KDB Sertifikaları - Middleware Portal{% endblock %}
+{% block page_title %}KDB Sertifikaları{% endblock %}
+
+{% block extra_css %}
+<style>
+    .certificate-row {
+        transition: all 0.3s ease;
+    }
+    
+    .certificate-row:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+    
+    .expiry-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+    }
+    
+    .filter-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+    }
+    
+    .table-actions {
+        min-width: 120px;
+    }
+    
+    .server-tags {
+        max-width: 200px;
+    }
+    
+    .server-tag {
+        font-size: 0.7rem;
+        margin: 0.1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Filtreleme ve İstatistikler -->
+<div class="row mb-4">
+    <div class="col-xl-8">
+        <div class="card filter-card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Arama</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ active_filters.search }}" 
+                               placeholder="Common Name, Serial, Sunucu...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="data_source" class="form-label">Veri Kaynağı</label>
+                        <select class="form-select" id="data_source" name="data_source">
+                            <option value="">Tümü</option>
+                            {% for value, label in data_source_choices %}
+                            <option value="{{ value }}" {% if active_filters.data_source == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="expiry_status" class="form-label">Bitiş Durumu</label>
+                        <select class="form-select" id="expiry_status" name="expiry_status">
+                            <option value="">Tümü</option>
+                            <option value="expired" {% if active_filters.expiry_status == 'expired' %}selected{% endif %}>
+                                Süresi Dolmuş
+                            </option>
+                            <option value="expiring_7" {% if active_filters.expiry_status == 'expiring_7' %}selected{% endif %}>
+                                7 Gün İçinde
+                            </option>
+                            <option value="expiring_30" {% if active_filters.expiry_status == 'expiring_30' %}selected{% endif %}>
+                                30 Gün İçinde
+                            </option>
+                            <option value="valid" {% if active_filters.expiry_status == 'valid' %}selected{% endif %}>
+                                Geçerli
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-light">
+                                <i class="ri-search-line me-1"></i>Filtrele
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">İstatistikler</h6>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h5 class="mb-1 text-primary">{{ stats.total }}</h5>
+                            <p class="text-muted mb-0 small">Toplam</p>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h5 class="mb-1 text-danger">{{ stats.expired }}</h5>
+                            <p class="text-muted mb-0 small">Dolmuş</p>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="mb-1 text-warning">{{ stats.expiring_30 }}</h5>
+                        <p class="text-muted mb-0 small">30 Gün</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tablo -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title mb-0">
+            <i class="ri-database-2-line me-2"></i>KDB Sertifikaları
+            <span class="badge bg-primary ms-2">{{ page_obj.paginator.count }}</span>
+        </h4>
+        <div class="d-flex gap-2">
+            <a href="{% url 'certificates:export_certificates' %}?type=kdb" class="btn btn-outline-primary btn-sm">
+                <i class="ri-download-line me-1"></i>Dışa Aktar
+            </a>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    Sıralama
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort=valid_to">Bitiş Tarihi (Yakın)</a></li>
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort=-valid_to">Bitiş Tarihi (Uzak)</a></li>
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort=common_name">İsim (A-Z)</a></li>
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort=-common_name">İsim (Z-A)</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if certificates %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Common Name</th>
+                        <th>Veri Kaynağı</th>
+                        <th>Bitiş Tarihi</th>
+                        <th>Kalan Gün</th>
+                        <th>Sunucular</th>
+                        <th class="table-actions">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cert in certificates %}
+                    <tr class="certificate-row">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-3">
+                                    {% if cert.is_wildcard %}
+                                        <i class="ri-global-line text-info" title="Wildcard Sertifika"></i>
+                                    {% elif cert.is_self_signed %}
+                                        <i class="ri-shield-line text-warning" title="Self-Signed"></i>
+                                    {% else %}
+                                        <i class="ri-shield-check-line text-success" title="CA Signed"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">{{ cert.common_name }}</h6>
+                                    <p class="text-muted mb-0 small">{{ cert.serial_number|truncatechars:20 }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ cert.data_source }}-subtle text-{{ cert.data_source }}">
+                                {{ cert.get_data_source_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ cert.valid_to|date:"d.m.Y" }}</strong>
+                            </div>
+                            <small class="text-muted">{{ cert.valid_to|date:"H:i" }}</small>
+                        </td>
+                        <td>
+                            <span class="expiry-badge expiry-{{ cert.expiry_status }}">
+                                {% if cert.is_expired %}
+                                    Doldu ({{ cert.days_until_expiry|add:"-1" }} gün)
+                                {% else %}
+                                    {{ cert.days_until_expiry }} gün
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="server-tags">
+                                {% for server in cert.servers.all|slice:":3" %}
+                                    <span class="badge bg-light text-dark server-tag">{{ server.hostname }}</span>
+                                {% endfor %}
+                                {% if cert.servers.count > 3 %}
+                                    <span class="badge bg-secondary server-tag">+{{ cert.servers.count|add:"-3" }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="ri-more-line"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'certificates:kdb_detail' cert.pk %}">
+                                            <i class="ri-eye-line me-2"></i>Görüntüle
+                                        </a>
+                                    </li>
+                                    {% if cert.appviewx_cert_id %}
+                                    <li>
+                                        <a class="dropdown-item" href="{{ cert.get_appviewx_url }}" target="_blank">
+                                            <i class="ri-external-link-line me-2"></i>AppViewX'te Aç
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-info" href="#" onclick="checkCertificateStatus({{ cert.id }})">
+                                            <i class="ri-refresh-line me-2"></i>Durumu Kontrol Et
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Sayfalama -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer">
+            <nav aria-label="Sayfa navigasyonu">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">
+                                <i class="ri-arrow-left-line"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">
+                                <i class="ri-arrow-right-line"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="ri-database-2-line display-4 text-muted"></i>
+            <h5 class="mt-3">KDB Sertifikası Bulunamadı</h5>
+            <p class="text-muted">Filtreleme kriterlerinizi değiştirmeyi deneyin.</p>
+            <a href="{% url 'certificates:kdb_list' %}" class="btn btn-primary">
+                Tüm Sertifikaları Göster
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function checkCertificateStatus(certId) {
+    // Sertifika durumu kontrol fonksiyonu
+    fetch(`/certificates/api/check-status/${certId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Sayfayı yenile veya durumu güncelle
+            location.reload();
+        } else {
+            alert('Durum kontrolü başarısız oldu.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu.');
+    });
+}
+
+// Filtreleme formunu otomatik gönder
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInputs = document.querySelectorAll('#search, #data_source, #expiry_status');
+    
+    filterInputs.forEach(input => {
+        if (input.type === 'text') {
+            let timeout;
+            input.addEventListener('input', function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    this.form.submit();
+                }, 500);
+            });
+        } else {
+            input.addEventListener('change', function() {
+                this.form.submit();
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,107 @@
+<!-- ========== App Menu ========== -->
+<div class="app-menu navbar-menu">
+    <!-- LOGO -->
+    <div class="navbar-brand-box">
+        <!-- Dark Logo-->
+        <a href="{% url 'core:dashboard' %}" class="logo logo-dark">
+            <span class="logo-sm">
+                <img src="/static/images/logo-sm.png" alt="" height="22">
+            </span>
+            <span class="logo-lg">
+                <img src="/static/images/logo-dark.png" alt="" height="17">
+            </span>
+        </a>
+        <!-- Light Logo-->
+        <a href="{% url 'core:dashboard' %}" class="logo logo-light">
+            <span class="logo-sm">
+                <img src="/static/images/logo-sm.png" alt="" height="22">
+            </span>
+            <span class="logo-lg">
+                <img src="/static/images/logo-light.png" alt="" height="17">
+            </span>
+        </a>
+        <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
+            <i class="ri-record-circle-line"></i>
+        </button>
+    </div>
+
+    <div id="scrollbar">
+        <div class="container-fluid">
+            <div id="two-column-menu">
+            </div>
+            <ul class="navbar-nav" id="navbar-nav">
+                <li class="menu-title"><span data-key="t-menu">Menü</span></li>
+                
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'core:dashboard' %}">
+                        <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Envanter -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {% if 'inventory' in request.resolver_match.namespace %}active{% endif %}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
+                        <i class="ri-server-line"></i> <span data-key="t-inventory">Envanter</span>
+                    </a>
+                    <div class="collapse menu-dropdown {% if 'inventory' in request.resolver_match.namespace %}show{% endif %}" id="sidebarInventory">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{% url 'inventory:server_list' %}" class="nav-link {% if request.resolver_match.url_name == 'server_list' %}active{% endif %}" data-key="t-servers">Sunucular</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'inventory:application_list' %}" class="nav-link {% if request.resolver_match.url_name == 'application_list' %}active{% endif %}" data-key="t-applications">Uygulamalar</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- AskGT -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {% if 'askgt' in request.resolver_match.namespace %}active{% endif %}" href="{% url 'askgt:question_list' %}">
+                        <i class="ri-question-answer-line"></i> <span data-key="t-askgt">AskGT</span>
+                    </a>
+                </li>
+
+                <!-- Duyurular -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {% if 'announcements' in request.resolver_match.namespace %}active{% endif %}" href="{% url 'announcements:announcement_list' %}">
+                        <i class="ri-notification-3-line"></i> <span data-key="t-announcements">Duyurular</span>
+                    </a>
+                </li>
+
+                <!-- Otomasyon -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {% if 'automation' in request.resolver_match.namespace %}active{% endif %}" href="{% url 'automation:automation_list' %}">
+                        <i class="ri-settings-3-line"></i> <span data-key="t-automation">Otomasyon</span>
+                    </a>
+                </li>
+
+                <!-- Performans -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {% if 'performance' in request.resolver_match.namespace %}active{% endif %}" href="{% url 'performance:performance_dashboard' %}">
+                        <i class="ri-line-chart-line"></i> <span data-key="t-performance">Performans</span>
+                    </a>
+                </li>
+
+                <!-- Önemli Linkler -->
+                {% if important_links %}
+                <li class="menu-title"><span data-key="t-links">Önemli Linkler</span></li>
+                {% for link in important_links %}
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="{{ link.url }}" target="_blank" title="{{ link.description }}">
+                        <i class="{{ link.icon }}"></i> <span>{{ link.title }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+                {% endif %}
+
+            </ul>
+        </div>
+    </div>
+
+    <div class="sidebar-background"></div>
+</div>
+<!-- Left Sidebar End -->
+<!-- Vertical Overlay-->
+<div class="vertical-overlay"></div>

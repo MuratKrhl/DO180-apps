@@ -1,0 +1,152 @@
+/* Teknoloji Logo Şeridi Stilleri */
+.technology-banner {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  padding: 12px 0;
+  position: sticky;
+  top: 70px; /* Header yüksekliği kadar */
+  z-index: 999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.technology-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 24px;
+  overflow-x: auto;
+  padding: 0 20px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.technology-logos::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.logo-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: default;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.logo-item:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: rgba(64, 81, 137, 0.2);
+}
+
+.tech-logo {
+  height: 32px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+  filter: grayscale(20%) opacity(0.85);
+  transition: all 0.3s ease;
+}
+
+.logo-item:hover .tech-logo {
+  filter: grayscale(0%) opacity(1);
+  transform: scale(1.05);
+}
+
+/* Responsive Tasarım */
+@media (max-width: 1200px) {
+  .technology-logos {
+    gap: 20px;
+  }
+
+  .tech-logo {
+    height: 28px;
+    max-width: 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  .technology-banner {
+    padding: 8px 0;
+  }
+
+  .technology-logos {
+    gap: 16px;
+    padding: 0 15px;
+  }
+
+  .tech-logo {
+    height: 24px;
+    max-width: 60px;
+  }
+
+  .logo-item {
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .technology-logos {
+    gap: 12px;
+    padding: 0 10px;
+  }
+
+  .tech-logo {
+    height: 20px;
+    max-width: 50px;
+  }
+
+  .logo-item {
+    padding: 4px 8px;
+  }
+}
+
+/* Animasyon Efektleri */
+@keyframes logoFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.logo-item:nth-child(odd):hover {
+  animation: logoFloat 2s ease-in-out infinite;
+}
+
+.logo-item:nth-child(even):hover {
+  animation: logoFloat 2s ease-in-out infinite reverse;
+}
+
+/* Dark Mode Desteği */
+[data-bs-theme="dark"] .technology-banner {
+  background: linear-gradient(135deg, #2a3042 0%, #1e2139 100%);
+  border-bottom-color: #3a4356;
+}
+
+[data-bs-theme="dark"] .logo-item {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] .logo-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(64, 81, 137, 0.4);
+}
+
+[data-bs-theme="dark"] .tech-logo {
+  filter: grayscale(30%) opacity(0.8) brightness(1.1);
+}
+
+[data-bs-theme="dark"] .logo-item:hover .tech-logo {
+  filter: grayscale(0%) opacity(1) brightness(1.2);
+}

@@ -1,0 +1,141 @@
+<!-- Theme Customizer Panel -->
+<div class="customizer-setting-panel">
+    <div class="customizer-panel-overlay"></div>
+    <div class="customizer-panel">
+        <div class="customizer-header">
+            <h5 class="customizer-title">
+                <i class="ri-settings-3-line"></i> Arayüz Ayarları
+            </h5>
+            <button type="button" class="btn-close customizer-close" aria-label="Close"></button>
+        </div>
+        
+        <div class="customizer-body">
+            <!-- Layout Seçenekleri -->
+            <div class="customizer-section">
+                <h6 class="customizer-section-title">Layout Tipi</h6>
+                <div class="customizer-options">
+                    <div class="customizer-option">
+                        <input type="radio" id="layout-vertical" name="layout" value="vertical" class="customizer-radio">
+                        <label for="layout-vertical" class="customizer-label">
+                            <div class="customizer-preview">
+                                <div class="preview-layout vertical-preview">
+                                    <div class="preview-sidebar"></div>
+                                    <div class="preview-content"></div>
+                                </div>
+                            </div>
+                            <span class="customizer-text">Dikey</span>
+                        </label>
+                    </div>
+                    
+                    <div class="customizer-option">
+                        <input type="radio" id="layout-horizontal" name="layout" value="horizontal" class="customizer-radio">
+                        <label for="layout-horizontal" class="customizer-label">
+                            <div class="customizer-preview">
+                                <div class="preview-layout horizontal-preview">
+                                    <div class="preview-topbar"></div>
+                                    <div class="preview-content"></div>
+                                </div>
+                            </div>
+                            <span class="customizer-text">Yatay</span>
+                        </label>
+                    </div>
+                    
+                    <div class="customizer-option">
+                        <input type="radio" id="layout-twocolumn" name="layout" value="twocolumn" class="customizer-radio">
+                        <label for="layout-twocolumn" class="customizer-label">
+                            <div class="customizer-preview">
+                                <div class="preview-layout twocolumn-preview">
+                                    <div class="preview-sidebar-sm"></div>
+                                    <div class="preview-sidebar-lg"></div>
+                                    <div class="preview-content"></div>
+                                </div>
+                            </div>
+                            <span class="customizer-text">İki Kolon</span>
+                        </label>
+                    </div>
+                    
+                    <div class="customizer-option">
+                        <input type="radio" id="layout-semibox" name="layout" value="semibox" class="customizer-radio">
+                        <label for="layout-semibox" class="customizer-label">
+                            <div class="customizer-preview">
+                                <div class="preview-layout semibox-preview">
+                                    <div class="preview-sidebar"></div>
+                                    <div class="preview-content-box"></div>
+                                </div>
+                            </div>
+                            <span class="customizer-text">Yarı Kutu</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar Boyutu -->
+            <div class="customizer-section">
+                <h6 class="customizer-section-title">Kenar Çubuğu Boyutu</h6>
+                <div class="customizer-options">
+                    <div class="customizer-option">
+                        <input type="radio" id="sidebar-default" name="sidebar-size" value="lg" class="customizer-radio">
+                        <label for="sidebar-default" class="customizer-label">
+                            <span class="customizer-text">Varsayılan</span>
+                        </label>
+                    </div>
+                    
+                    <div class="customizer-option">
+                        <input type="radio" id="sidebar-compact" name="sidebar-size" value="md" class="customizer-radio">
+                        <label for="sidebar-compact" class="customizer-label">
+                            <span class="customizer-text">Kompakt</span>
+                        </label>
+                    </div>
+                    
+                    <div class="customizer-option">
+                        <input type="radio" id="sidebar-small" name="sidebar-size" value="sm" class="customizer-radio">
+                        <label for="sidebar-small" class="customizer-label">
+                            <span class="customizer-text">Küçük (İkon)</span>
+                        </label>
+                    </div>
+                    
+                    <div class="customizer-option">
+                        <input type="radio" id="sidebar-hover" name="sidebar-size" value="sm-hover" class="customizer-radio">
+                        <label for="sidebar-hover" class="customizer-label">
+                            <span class="customizer-text">Hover Açılır</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tema Rengi -->
+            <div class="customizer-section">
+                <h6 class="customizer-section-title">Tema Rengi</h6>
+                <div class="customizer-options">
+                    <div class="customizer-option">
+                        <input type="radio" id="theme-light" name="theme-mode" value="light" class="customizer-radio">
+                        <label for="theme-light" class="customizer-label">
+                            <span class="customizer-text">Açık Tema</span>
+                        </label>
+                    </div>
+                    
+                    <div class="customizer-option">
+                        <input type="radio" id="theme-dark" name="theme-mode" value="dark" class="customizer-radio">
+                        <label for="theme-dark" class="customizer-label">
+                            <span class="customizer-text">Koyu Tema</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sıfırlama -->
+            <div class="customizer-section">
+                <button type="button" class="btn btn-outline-danger w-100" id="reset-layout">
+                    <i class="ri-refresh-line"></i> Varsayılan Ayarlara Dön
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customizer Trigger Button -->
+<div class="customizer-trigger">
+    <button type="button" class="btn btn-primary customizer-btn" data-bs-toggle="tooltip" data-bs-placement="left" title="Arayüz Ayarları">
+        <i class="ri-settings-3-line"></i>
+    </button>
+</div>

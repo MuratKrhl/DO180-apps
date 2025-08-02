@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ duty.primary_person }} - {{ duty.date|date:"d.m.Y" }} - Middleware Portal{% endblock %}
+{% block page_title %}Nöbet Detayı{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="ri-calendar-check-line me-2"></i>
+                        {{ duty.date|date:"d F Y" }} - {{ duty.day_name }}
+                    </h4>
+                    <div class="d-flex gap-2">
+                        {% if prev_duty %}
+                            <a href="{% url 'duty_schedule:duty_detail' prev_duty.pk %}" 
+                               class="btn btn-outline-secondary btn-sm" title="Önceki Nöbet">
+                                <i class="ri-arrow-left-line"></i>
+                            </a>
+                        {% endif %}
+                        {% if next_duty %}
+                            <a href="{% url 'duty_schedule:duty_detail' next_duty.pk %}" 
+                               class="btn btn-outline-secondary btn-sm" title="Sonraki Nöbet">
+                                <i class="ri-arrow-right-line"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="text-primary mb-3">Birincil Nöbetçi</h5>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="person-avatar me-3">
+                                {{ duty.primary_person|first }}
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ duty.primary_person }}</h6>
+                                {% if duty.department %}
+                                    <p class="text-muted mb-0">{{ duty.department }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if duty.phone %}
+                        <div class="mb-2">
+                            <i class="ri-phone-line text-primary me-2"></i>
+                            <a href="tel:{{ duty.phone }}" class="text-decoration-none">{{ duty.phone }}</a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if duty.email %}
+                        <div class="mb-2">
+                            <i class="ri-mail-line text-primary me-2"></i>
+                            <a href="mailto:{{ duty.email }}" class="text-decoration-none">{{ duty.email }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if duty.secondary_person %}
+                    <div class="col-md-6">
+                        <h5 class="text-secondary mb-3">İkincil Nöbetçi</h5>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="person-avatar me-3" style="background: #6c757d;">
+                                {{ duty.secondary_person|first }}
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ duty.secondary_person }}</h6>
+                                <p class="text-muted mb-0">Yedek Nöbetçi</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if duty.notes %}
+                <div class="mt-4">
+                    <h6 class="text-muted mb-2">Notlar</h6>
+                    <div class="alert alert-info">
+                        {{ duty.notes }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Durum Bilgisi</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="badge bg-{{ duty.status_color }} fs-6">
+                        {% if duty.is_today %}
+                            Bugünkü Nöbet
+                        {% elif duty.is_past %}
+                            Geçmiş Nöbet
+                        {% elif duty.is_weekend %}
+                            Hafta Sonu Nöbeti
+                        {% elif duty.is_holiday %}
+                            Tatil Nöbeti
+                        {% else %}
+                            Gelecek Nöbet
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="mb-2">
+                    <small class="text-muted">Tarih:</small>
+                    <div>{{ duty.date|date:"l, d F Y" }}</div>
+                </div>
+                
+                {% if duty.is_weekend %}
+                <div class="mb-2">
+                    <small class="text-muted">Özel Durum:</small>
+                    <div><span class="badge bg-warning">Hafta Sonu</span></div>
+                </div>
+                {% endif %}
+                
+                {% if duty.is_holiday %}
+                <div class="mb-2">
+                    <small class="text-muted">Özel Durum:</small>
+                    <div><span class="badge bg-danger">Tatil Günü</span></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Hızlı İşlemler</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if duty.phone %}
+                    <a href="tel:{{ duty.phone }}" class="btn btn-success">
+                        <i class="ri-phone-line me-2"></i>Ara
+                    </a>
+                    {% endif %}
+                    
+                    {% if duty.email %}
+                    <a href="mailto:{{ duty.email }}" class="btn btn-primary">
+                        <i class="ri-mail-line me-2"></i>E-posta Gönder
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'duty_schedule:duty_list' %}" class="btn btn-outline-secondary">
+                        <i class="ri-list-check me-2"></i>Nöbet Listesi
+                    </a>
+                    
+                    <a href="{% url 'duty_schedule:duty_calendar' %}?year={{ duty.date.year }}&month={{ duty.date.month }}" 
+                       class="btn btn-outline-primary">
+                        <i class="ri-calendar-2-line me-2"></i>Takvim Görünümü
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

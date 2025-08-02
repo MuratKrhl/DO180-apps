@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ category.name }} - Önemli Linkler{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <div class="container-fluid">
+        
+        <!-- Page Title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">
+                        <i class="{{ category.icon }} me-2"></i>{{ category.name }}
+                    </h4>
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'important_links:links_list' %}">Önemli Linkler</a></li>
+                            <li class="breadcrumb-item active">{{ category.name }}</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kategori Bilgileri -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-lg flex-shrink-0">
+                                <span class="avatar-title bg-{{ category.color }}-subtle text-{{ category.color }} rounded fs-2">
+                                    <i class="{{ category.icon }}"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h4 class="mb-1">{{ category.name }}</h4>
+                                {% if category.description %}
+                                <p class="text-muted mb-2">{{ category.description }}</p>
+                                {% endif %}
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-{{ category.color }}">{{ link_count }} Link</span>
+                                    <small class="text-muted">
+                                        <i class="ri-time-line"></i> 
+                                        Güncelleme: {{ category.updated_at|date:"d.m.Y H:i" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Linkler -->
+        <div class="row">
+            {% for link in links %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card link-card h-100">
+                    {% if link.is_featured %}
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <span class="badge bg-warning">
+                            <i class="ri-star-fill"></i> Öne Çıkan
+                        </span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <div class="avatar-md mx-auto">
+                                <span class="avatar-title bg-{{ category.color }}-subtle text-{{ category.color }} rounded fs-3">
+                                    <i class="{{ link.icon }}"></i>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <h5 class="card-title mb-2">
+                                <a href="{% url 'important_links:link_redirect' link.id %}" 
+                                   target="_blank" class="text-decoration-none">
+                                    {{ link.title }}
+                                </a>
+                            </h5>
+                            
+                            {% if link.description %}
+                            <p class="text-muted mb-3">{{ link.description }}</p>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-center gap-2 mb-3">
+                                {% if link.requires_vpn %}
+                                <span class="badge bg-danger-subtle text-danger">
+                                    <i class="ri-shield-line"></i> VPN Gerekli
+                                </span>
+                                {% endif %}
+                                
+                                {% if not link.is_internal %}
+                                <span class="badge bg-warning-subtle text-warning">
+                                    <i class="ri-external-link-line"></i> Harici
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="ri-mouse-line"></i> {{ link.click_count }} tıklama
+                                </small>
+                                
+                                <a href="{% url 'important_links:link_redirect' link.id %}" 
+                                   target="_blank" class="btn btn-{{ category.color }} btn-sm">
+                                    <i class="ri-external-link-line"></i> Aç
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if link.get_tags_list %}
+                    <div class="card-footer bg-light">
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for tag in link.get_tags_list %}
+                            <span class="badge bg-secondary-subtle text-secondary">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="ri-inbox-line fs-1 text-muted d-block mb-3"></i>
+                        <h5 class="text-muted">Bu kategoride henüz link bulunmuyor</h5>
+                        <p class="text-muted">Admin panelinden link ekleyebilirsiniz.</p>
+                        <a href="{% url 'important_links:links_list' %}" class="btn btn-primary">
+                            <i class="ri-arrow-left-line"></i> Geri Dön
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Link kartları hover efekti
+$('.link-card').hover(
+    function() {
+        $(this).addClass('shadow-lg');
+    },
+    function() {
+        $(this).removeClass('shadow-lg');
+    }
+);
+
+// Link tıklama tracking
+$('a[target="_blank"]').click(function() {
+    const linkTitle = $(this).text().trim();
+    console.log('Link tıklandı:', linkTitle);
+    
+    // Görsel feedback
+    $(this).closest('.card').addClass('border-success');
+    setTimeout(() => {
+        $(this).closest('.card').removeClass('border-success');
+    }, 1000);
+});
+</script>
+{% endblock %}

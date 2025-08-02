@@ -1,0 +1,895 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Middleware Portal{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 1px solid #e9ecef;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        border-color: #405189;
+    }
+    
+    .dashboard-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+        opacity: 0.7;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 1rem 0;
+    }
+    
+    .activity-item {
+        padding: 1rem;
+        border-left: 3px solid #e9ecef;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .activity-item:hover {
+        background-color: #f8f9fa;
+        border-left-color: #405189;
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .quick-link-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    
+    .quick-link-item:hover {
+        background: #405189;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-card {
+        height: 120px;
+        border-radius: 8px;
+    }
+    
+    .skeleton-chart {
+        height: 300px;
+        border-radius: 8px;
+    }
+    
+    .skeleton-text {
+        height: 20px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+    
+    /* JBoss 8 Migrasyon Widget Özel Stilleri */
+    .jboss8-widget {
+        background: linear-gradient(135deg, #299cdb 0%, #6f42c1 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .jboss8-widget::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/></svg>');
+        animation: rotate 20s linear infinite;
+    }
+    
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .migration-progress {
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.2);
+        margin-top: 0.5rem;
+    }
+    
+    .migration-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
+        transition: width 0.3s ease;
+        border-radius: 4px;
+    }
+    
+    .migration-target {
+        font-size: 0.75rem;
+        opacity: 0.9;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Üst Sıra Özet Kartları -->
+<div class="row" id="summary-cards">
+    <!-- Skeleton Loading -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <div class="skeleton skeleton-card"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <div class="skeleton skeleton-card"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <div class="skeleton skeleton-card"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card dashboard-card jboss8-widget">
+            <div class="card-body">
+                <div class="skeleton skeleton-card"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JBoss 8 Migrasyon Detay Widget -->
+<div class="row mb-4" id="jboss8-detail-widget" style="display: none;">
+    <div class="col-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="ri-rocket-line me-2"></i>JBoss 8 Migrasyon Projesi
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="toggleJBoss8Detail()">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="display-4 text-primary mb-2" id="jboss8-completion-percentage">0%</div>
+                            <h6 class="text-muted">Tamamlanma Oranı</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
+                                 id="jboss8-progress-bar" role="progressbar" style="width: 0%">
+                            </div>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <div class="border-end">
+                                    <h6 class="mb-1 text-success" id="jboss8-completed">0</h6>
+                                    <p class="text-muted mb-0 small">Tamamlandı</p>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="border-end">
+                                    <h6 class="mb-1 text-warning" id="jboss8-in-progress">0</h6>
+                                    <p class="text-muted mb-0 small">Devam Ediyor</p>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="border-end">
+                                    <h6 class="mb-1 text-secondary" id="jboss8-not-started">0</h6>
+                                    <p class="text-muted mb-0 small">Başlanmadı</p>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <h6 class="mb-1 text-danger" id="jboss8-failed">0</h6>
+                                <p class="text-muted mb-0 small">Başarısız</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted mb-2">Hedef Tarih</h6>
+                            <p class="mb-0" id="jboss8-deadline">-</p>
+                            <div class="mt-2">
+                                <a href="{% url 'inventory:inventory_list' %}?version=jboss8" class="btn btn-primary btn-sm">
+                                    <i class="ri-eye-line"></i> JBoss 8 Uygulamaları
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orta Sıra - Grafikler -->
+<div class="row">
+    <!-- Sol: Performans Grafiği -->
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="ri-line-chart-line me-2"></i>Performans Trendi
+                </h4>
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Son 24 Saat
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-period="24h">Son 24 Saat</a></li>
+                        <li><a class="dropdown-item" href="#" data-period="7d">Son 7 Gün</a></li>
+                        <li><a class="dropdown-item" href="#" data-period="30d">Son 30 Gün</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="performance-chart-container">
+                    <div class="skeleton skeleton-chart"></div>
+                </div>
+                <canvas id="performance-chart" style="display: none;"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: Envanter Sağlık Durumu -->
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="ri-pie-chart-line me-2"></i>Envanter Durumu
+                </h4>
+            </div>
+            <div class="card-body">
+                <div id="inventory-chart-container">
+                    <div class="skeleton skeleton-chart"></div>
+                </div>
+                <canvas id="inventory-chart" style="display: none;"></canvas>
+                
+                <!-- Envanter Özeti -->
+                <div class="mt-3" id="inventory-summary" style="display: none;">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h5 class="mb-1" id="total-servers">-</h5>
+                                <p class="text-muted mb-0">Sunucu</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="mb-1" id="total-apps">-</h5>
+                            <p class="text-muted mb-0">Uygulama</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alt Sıra - İçerik Alanları -->
+<div class="row">
+    <!-- Sol: Son Duyurular -->
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="ri-notification-3-line me-2"></i>Son Duyurular
+                </h4>
+                <a href="{% url 'announcements:announcement_list' %}" class="btn btn-outline-primary btn-sm">
+                    Tümünü Gör
+                </a>
+            </div>
+            <div class="card-body">
+                <div id="announcements-container">
+                    <!-- Skeleton Loading -->
+                    {% for i in "12345" %}
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="skeleton" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                            <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: Son AskGT Makaleleri -->
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="ri-question-answer-line me-2"></i>Son AskGT Makaleleri
+                </h4>
+                <a href="{% url 'askgt:question_list' %}" class="btn btn-outline-primary btn-sm">
+                    Tümünü Gör
+                </a>
+            </div>
+            <div class="card-body">
+                <div id="questions-container">
+                    <!-- Skeleton Loading -->
+                    {% for i in "12345" %}
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="skeleton" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="skeleton skeleton-text" style="width: 90%;"></div>
+                            <div class="skeleton skeleton-text" style="width: 50%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sistem Aktiviteleri ve Hızlı Linkler -->
+<div class="row">
+    <!-- Sol: Sistem Aktiviteleri -->
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="ri-history-line me-2"></i>Son Sistem Aktiviteleri
+                </h4>
+            </div>
+            <div class="card-body">
+                <div id="activities-container">
+                    <!-- Skeleton Loading -->
+                    {% for i in "12345" %}
+                    <div class="activity-item">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <div class="skeleton" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="skeleton skeleton-text" style="width: 70%;"></div>
+                                <div class="skeleton skeleton-text" style="width: 50%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: Hızlı Erişim -->
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="ri-links-line me-2"></i>Hızlı Erişim
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% if quick_links %}
+                        {% for link in quick_links %}
+                        <div class="col-6">
+                            <a href="{{ link.url }}" target="_blank" class="quick-link-item">
+                                <div class="text-center">
+                                    <i class="{{ link.icon }} fs-24 mb-2"></i>
+                                    <h6 class="mb-0">{{ link.title }}</h6>
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="col-12 text-center py-4">
+                            <i class="ri-links-line display-4 text-muted"></i>
+                            <h6 class="mt-3">Hızlı erişim linki bulunamadı</h6>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+class DashboardManager {
+    constructor() {
+        this.charts = {};
+        this.jboss8DetailVisible = false;
+        this.init();
+    }
+    
+    init() {
+        this.loadSummaryCards();
+        this.loadPerformanceChart();
+        this.loadInventoryChart();
+        this.loadAnnouncements();
+        this.loadQuestions();
+        this.loadActivities();
+        this.loadJBoss8Stats();
+        this.bindEvents();
+    }
+    
+    async loadSummaryCards() {
+        try {
+            const response = await fetch('/api/dashboard/summary/');
+            const data = await response.json();
+            this.renderSummaryCards(data);
+        } catch (error) {
+            console.error('Error loading summary cards:', error);
+        }
+    }
+    
+    renderSummaryCards(data) {
+        const container = document.getElementById('summary-cards');
+        container.innerHTML = `
+            <div class="col-xl-3 col-md-6">
+                <div class="card dashboard-card" onclick="window.location.href='/inventory/applications/'">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <div class="stat-number text-primary">${data.total_applications}</div>
+                                <div class="stat-label">Toplam Uygulama</div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <i class="ri-apps-line stat-icon text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card dashboard-card" onclick="window.location.href='/inventory/servers/'">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <div class="stat-number text-success">${data.total_servers}</div>
+                                <div class="stat-label">Toplam Sunucu</div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <i class="ri-server-line stat-icon text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card dashboard-card ${data.active_alerts > 0 ? 'border-danger' : ''}" onclick="window.location.href='/performance/alerts/'">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <div class="stat-number ${data.active_alerts > 0 ? 'text-danger' : 'text-warning'}">${data.active_alerts}</div>
+                                <div class="stat-label">Aktif Uyarı</div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <i class="ri-alarm-warning-line stat-icon ${data.active_alerts > 0 ? 'text-danger' : 'text-warning'}"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card dashboard-card jboss8-widget" onclick="handleJBoss8Click()">
+                    <div class="card-body position-relative">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <div class="stat-number">${data.jboss8_applications}</div>
+                                <div class="stat-label">JBoss 8 Uygulaması</div>
+                                <div class="migration-progress">
+                                    <div class="migration-progress-bar" style="width: ${data.jboss8_percentage}%"></div>
+                                </div>
+                                <div class="migration-target">
+                                    Hedef: ${data.total_jboss_applications} (%${data.jboss8_percentage})
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <i class="ri-rocket-line stat-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    async loadJBoss8Stats() {
+        try {
+            const response = await fetch('/api/dashboard/jboss8/');
+            const data = await response.json();
+            this.renderJBoss8Detail(data);
+        } catch (error) {
+            console.error('Error loading JBoss 8 stats:', error);
+        }
+    }
+    
+    renderJBoss8Detail(data) {
+        // Detay widget'ını güncelle
+        document.getElementById('jboss8-completion-percentage').textContent = 
+            Math.round(data.target_percentage) + '%';
+        
+        document.getElementById('jboss8-progress-bar').style.width = data.target_percentage + '%';
+        
+        document.getElementById('jboss8-completed').textContent = data.completed;
+        document.getElementById('jboss8-in-progress').textContent = data.in_progress;
+        document.getElementById('jboss8-not-started').textContent = data.not_started;
+        document.getElementById('jboss8-failed').textContent = data.failed;
+        
+        if (data.deadline) {
+            const deadline = new Date(data.deadline);
+            document.getElementById('jboss8-deadline').textContent = 
+                deadline.toLocaleDateString('tr-TR');
+        }
+    }
+    
+    async loadPerformanceChart() {
+        try {
+            const response = await fetch('/api/dashboard/performance/');
+            const data = await response.json();
+            this.renderPerformanceChart(data);
+        } catch (error) {
+            console.error('Error loading performance chart:', error);
+        }
+    }
+    
+    renderPerformanceChart(data) {
+        const container = document.getElementById('performance-chart-container');
+        const canvas = document.getElementById('performance-chart');
+        
+        container.style.display = 'none';
+        canvas.style.display = 'block';
+        
+        const ctx = canvas.getContext('2d');
+        this.charts.performance = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 4,
+                        hoverRadius: 6
+                    }
+                }
+            }
+        });
+    }
+    
+    async loadInventoryChart() {
+        try {
+            const response = await fetch('/api/dashboard/inventory/');
+            const data = await response.json();
+            this.renderInventoryChart(data);
+        } catch (error) {
+            console.error('Error loading inventory chart:', error);
+        }
+    }
+    
+    renderInventoryChart(data) {
+        const container = document.getElementById('inventory-chart-container');
+        const canvas = document.getElementById('inventory-chart');
+        const summary = document.getElementById('inventory-summary');
+        
+        container.style.display = 'none';
+        canvas.style.display = 'block';
+        summary.style.display = 'block';
+        
+        // Özet bilgileri güncelle
+        const totalServers = data.servers.data.reduce((a, b) => a + b, 0);
+        const totalApps = data.applications.data.reduce((a, b) => a + b, 0);
+        
+        document.getElementById('total-servers').textContent = totalServers;
+        document.getElementById('total-apps').textContent = totalApps;
+        
+        const ctx = canvas.getContext('2d');
+        this.charts.inventory = new Chart(ctx, {
+            type: 'doughnut',
+            data: data.servers,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const label = data.servers.labels[index];
+                        window.location.href = `/inventory/servers/?environment=${label.toLowerCase()}`;
+                    }
+                }
+            }
+        });
+    }
+    
+    async loadAnnouncements() {
+        try {
+            // Gerçek implementasyonda API'den gelecek
+            const announcements = {{ recent_announcements|safe }};
+            this.renderAnnouncements(announcements);
+        } catch (error) {
+            console.error('Error loading announcements:', error);
+        }
+    }
+    
+    renderAnnouncements(announcements) {
+        const container = document.getElementById('announcements-container');
+        
+        if (announcements && announcements.length > 0) {
+            container.innerHTML = announcements.map(announcement => `
+                <div class="d-flex mb-3 pb-3 border-bottom">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm bg-${announcement.announcement_type}-subtle rounded">
+                            <span class="avatar-title bg-${announcement.announcement_type}-subtle text-${announcement.announcement_type} rounded">
+                                <i class="${announcement.type_icon}"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">
+                            <a href="/announcements/${announcement.id}/" class="text-decoration-none">
+                                ${announcement.title}
+                            </a>
+                            ${announcement.is_urgent ? '<span class="badge bg-danger ms-2">Acil</span>' : ''}
+                        </h6>
+                        <p class="text-muted mb-1 small">${announcement.get_announcement_type_display}</p>
+                        <small class="text-muted">
+                            <i class="ri-time-line"></i> ${new Date(announcement.start_date).toLocaleDateString('tr-TR')}
+                        </small>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="ri-notification-3-line display-4 text-muted"></i>
+                    <h6 class="mt-3">Duyuru bulunamadı</h6>
+                </div>
+            `;
+        }
+    }
+    
+    async loadQuestions() {
+        try {
+            // Gerçek implementasyonda API'den gelecek
+            const questions = {{ recent_questions|safe }};
+            this.renderQuestions(questions);
+        } catch (error) {
+            console.error('Error loading questions:', error);
+        }
+    }
+    
+    renderQuestions(questions) {
+        const container = document.getElementById('questions-container');
+        
+        if (questions && questions.length > 0) {
+            container.innerHTML = questions.map(question => `
+                <div class="d-flex mb-3 pb-3 border-bottom">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm bg-info-subtle rounded">
+                            <span class="avatar-title bg-info-subtle text-info rounded">
+                                <i class="${question.category.icon}"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">
+                            <a href="/askgt/question/${question.id}/" class="text-decoration-none">
+                                ${question.title}
+                            </a>
+                            ${question.is_featured ? '<i class="ri-star-fill text-warning ms-1"></i>' : ''}
+                        </h6>
+                        <p class="text-muted mb-1 small">${question.category.name}</p>
+                        <small class="text-muted">
+                            <i class="ri-eye-line"></i> ${question.view_count} görüntülenme
+                        </small>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="ri-question-answer-line display-4 text-muted"></i>
+                    <h6 class="mt-3">Soru bulunamadı</h6>
+                </div>
+            `;
+        }
+    }
+    
+    async loadActivities() {
+        try {
+            const response = await fetch('/api/dashboard/activities/');
+            const activities = await response.json();
+            this.renderActivities(activities);
+        } catch (error) {
+            console.error('Error loading activities:', error);
+        }
+    }
+    
+    renderActivities(activities) {
+        const container = document.getElementById('activities-container');
+        
+        if (activities && activities.length > 0) {
+            container.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <div class="activity-icon bg-${activity.color}-subtle text-${activity.color}">
+                                <i class="${activity.icon}"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">
+                                <a href="${activity.url}" class="text-decoration-none">
+                                    ${activity.title}
+                                </a>
+                            </h6>
+                            <p class="text-muted mb-1 small">${activity.description}</p>
+                            <small class="text-muted">
+                                <i class="ri-time-line"></i> ${new Date(activity.timestamp).toLocaleString('tr-TR')}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="ri-history-line display-4 text-muted"></i>
+                    <h6 class="mt-3">Aktivite bulunamadı</h6>
+                </div>
+            `;
+        }
+    }
+    
+    bindEvents() {
+        // Grafik periyot değiştirme
+        document.querySelectorAll('[data-period]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const period = e.target.dataset.period;
+                this.loadPerformanceChart(period);
+            });
+        });
+        
+        // Sayfa yenileme
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                this.refreshDashboard();
+            }
+        });
+    }
+    
+    refreshDashboard() {
+        // Cache'i temizle ve yeniden yükle
+        this.init();
+    }
+}
+
+// JBoss 8 widget tıklama işlevi
+function handleJBoss8Click() {
+    const detailWidget = document.getElementById('jboss8-detail-widget');
+    
+    if (window.dashboardManager.jboss8DetailVisible) {
+        // Envanter sayfasına yönlendir
+        window.location.href = '/inventory/?version=jboss8';
+    } else {
+        // Detay widget'ını göster
+        detailWidget.style.display = 'block';
+        detailWidget.scrollIntoView({ behavior: 'smooth' });
+        window.dashboardManager.jboss8DetailVisible = true;
+    }
+}
+
+// JBoss 8 detay widget'ını kapat
+function toggleJBoss8Detail() {
+    const detailWidget = document.getElementById('jboss8-detail-widget');
+    detailWidget.style.display = 'none';
+    window.dashboardManager.jboss8DetailVisible = false;
+}
+
+// Dashboard'u başlat
+document.addEventListener('DOMContentLoaded', () => {
+    window.dashboardManager = new DashboardManager();
+});
+
+// Auto-refresh every 5 minutes
+setInterval(() => {
+    if (window.dashboardManager) {
+        window.dashboardManager.refreshDashboard();
+    }
+}, 300000);
+</script>
+{% endblock %}

@@ -1,0 +1,6 @@
+{{ object.hostname }}
+{{ object.ip_address }}
+{{ object.description }}
+{{ object.location }}
+{{ object.get_environment_display }}
+{{ object.get_operating_system_display }}

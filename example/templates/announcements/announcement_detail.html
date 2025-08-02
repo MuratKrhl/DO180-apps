@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ announcement.title }} - Duyurular{% endblock %}
+{% block page_title %}{{ announcement.title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Ana Sayfa</a></li>
+<li class="breadcrumb-item"><a href="{% url 'announcements:announcement_list' %}">Duyurular</a></li>
+<li class="breadcrumb-item active">{{ announcement.title|truncatechars:30 }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Duyuru Detayı -->
+        <div class="alert {{ announcement.type_class }} border-0" role="alert">
+            <div class="d-flex">
+                <div class="flex-shrink-0">
+                    <i class="{{ announcement.type_icon }} fs-24"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h4 class="alert-heading mb-0">{{ announcement.title }}</h4>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-{{ announcement.announcement_type }}-subtle text-{{ announcement.announcement_type }}">
+                                {{ announcement.get_announcement_type_display }}
+                            </span>
+                            {% if announcement.is_urgent %}
+                            <span class="badge bg-danger">Acil</span>
+                            {% endif %}
+                            {% if announcement.is_pinned %}
+                            <span class="badge bg-warning">
+                                <i class="ri-pushpin-line"></i> Sabitlenmiş
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="announcement-content">
+                        {{ announcement.content|linebreaks }}
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Meta Bilgiler -->
+                    <div class="row text-muted small">
+                        <div class="col-md-6">
+                            <i class="ri-time-line"></i> Başlangıç: {{ announcement.start_date|date:"d.m.Y H:i" }}
+                        </div>
+                        {% if announcement.end_date %}
+                        <div class="col-md-6">
+                            <i class="ri-time-line"></i> Bitiş: {{ announcement.end_date|date:"d.m.Y H:i" }}
+                        </div>
+                        {% endif %}
+                        {% if announcement.created_by %}
+                        <div class="col-md-6 mt-2">
+                            <i class="ri-user-line"></i> Yayınlayan: {{ announcement.created_by.get_full_name|default:announcement.created_by.username }}
+                        </div>
+                        {% endif %}
+                        {% if announcement.target_audience %}
+                        <div class="col-md-6 mt-2">
+                            <i class="ri-group-line"></i> Hedef Kitle: {{ announcement.target_audience }}
+                        </div>
+                        {% endif %}
+                        <div class="col-md-6 mt-2">
+                            <i class="ri-refresh-line"></i> Güncellenme: {{ announcement.updated_at|date:"d.m.Y H:i" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Son Duyurular -->
+        {% if recent_announcements %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="ri-notification-3-line"></i> Son Duyurular
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for recent in recent_announcements %}
+                <div class="d-flex mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                    <div class="flex-shrink-0">
+                        <i class="{{ recent.type_icon }} text-{{ recent.announcement_type }}"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1 fs-14">
+                            <a href="{% url 'announcements:announcement_detail' recent.pk %}" class="text-decoration-none">
+                                {{ recent.title|truncatechars:50 }}
+                            </a>
+                        </h6>
+                        <small class="text-muted">
+                            <i class="ri-time-line"></i> {{ recent.start_date|date:"d.m.Y" }}
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Geri Dön -->
+        <div class="card">
+            <div class="card-body text-center">
+                <a href="{% url 'announcements:announcement_list' %}" class="btn btn-secondary">
+                    <i class="ri-arrow-left-line"></i> Duyuru Listesine Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

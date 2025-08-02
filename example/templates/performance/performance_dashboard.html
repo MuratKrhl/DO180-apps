@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Performance Dashboard - Middleware Portal{% endblock %}
+{% block page_title %}Performance Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Ana Sayfa</a></li>
+<li class="breadcrumb-item active">Performance</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .technology-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 1px solid #e9ecef;
+        height: 100%;
+    }
+    
+    .technology-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        border-color: #405189;
+    }
+    
+    .technology-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-widget {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .metric-widget:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .metric-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    
+    .alert-item {
+        padding: 1rem;
+        border-left: 4px solid #e9ecef;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .alert-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .alert-item.critical {
+        border-left-color: #dc3545;
+    }
+    
+    .alert-item.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .alert-item.info {
+        border-left-color: #0dcaf0;
+    }
+    
+    .source-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .source-status.connected {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+    
+    .source-status.disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .featured-tech {
+        background: linear-gradient(135deg, #405189 0%, #6f42c1 100%);
+        color: white;
+    }
+    
+    .featured-tech:hover {
+        color: white;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #405189;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Üst Sıra - Özet Kartları -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="metric-value text-primary">{{ stats.total_technologies }}</div>
+                        <div class="metric-label">Teknoloji</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-stack-line technology-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="metric-value text-info">{{ stats.total_metrics }}</div>
+                        <div class="metric-label">Toplam Metrik</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-line-chart-line technology-icon text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="metric-value text-warning">{{ stats.active_alerts }}</div>
+                        <div class="metric-label">Aktif Uyarı</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-alarm-warning-line technology-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="metric-value text-danger">{{ stats.critical_alerts }}</div>
+                        <div class="metric-label">Kritik Uyarı</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-error-warning-line technology-icon text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Öne Çıkan Teknolojiler -->
+{% if featured_technologies %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="ri-star-line me-2"></i>Öne Çıkan Teknolojiler
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for tech in featured_technologies %}
+                    <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
+                        <div class="technology-card featured-tech card h-100" 
+                             onclick="window.location.href='{% url 'performance:technology_dashboard' tech.technology %}'">
+                            <div class="card-body text-center">
+                                <i class="{{ tech.icon_class }} technology-icon"></i>
+                                <h5 class="mb-2">{{ tech.display_name }}</h5>
+                                <p class="mb-0 small opacity-75">{{ tech.description|truncatechars:60 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Ana İçerik -->
+<div class="row">
+    <!-- Sol: Teknoloji Listesi -->
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="ri-dashboard-3-line me-2"></i>Teknoloji Dashboard'ları
+                </h4>
+                <a href="{% url 'performance:observability_dashboard' %}" class="btn btn-primary btn-sm">
+                    <i class="ri-eye-line me-1"></i>Observability Dashboard
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for tech in technologies %}
+                    <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                        <div class="technology-card card h-100" 
+                             onclick="window.location.href='{% url 'performance:technology_dashboard' tech.technology %}'">
+                            <div class="card-body text-center">
+                                <i class="{{ tech.icon_class }} technology-icon text-{{ tech.color_scheme }}"></i>
+                                <h6 class="mb-2">{{ tech.display_name }}</h6>
+                                <p class="text-muted mb-0 small">{{ tech.description|truncatechars:50 }}</p>
+                                
+                                <!-- Metrik sayısı -->
+                                <div class="mt-2">
+                                    <span class="badge bg-{{ tech.color_scheme }}-subtle text-{{ tech.color_scheme }}">
+                                        {{ tech.metricdefinition_set.count }} Metrik
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5">
+                        <i class="ri-dashboard-3-line display-4 text-muted"></i>
+                        <h5 class="mt-3">Teknoloji dashboard'ı bulunamadı</h5>
+                        <p class="text-muted">Henüz yapılandırılmış teknoloji dashboard'ı bulunmuyor.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: Uyarılar ve Durum -->
+    <div class="col-xl-4">
+        <!-- Son Uyarılar -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="ri-notification-3-line me-2"></i>Son Uyarılar
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if recent_alerts %}
+                    {% for alert in recent_alerts %}
+                    <div class="alert-item {{ alert.severity }}" onclick="acknowledgeAlert({{ alert.id }})">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ alert.title }}</h6>
+                                <p class="mb-1 small text-muted">{{ alert.metric.technology.display_name }} - {{ alert.metric.display_name }}</p>
+                                <small class="text-muted">
+                                    <i class="ri-time-line"></i> {{ alert.triggered_at|timesince }} önce
+                                </small>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-{{ alert.severity_color }}">{{ alert.get_severity_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="ri-notification-off-line display-4 text-muted"></i>
+                        <h6 class="mt-3">Aktif uyarı yok</h6>
+                        <p class="text-muted mb-0">Tüm sistemler normal çalışıyor.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Metrik Kaynakları Durumu -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="ri-links-line me-2"></i>Metrik Kaynakları
+                </h4>
+            </div>
+            <div class="card-body">
+                {% for source in metric_sources %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ source.name }}</h6>
+                        <small class="text-muted">{{ source.get_source_type_display }}</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <span class="source-status connected" id="source-status-{{ source.id }}">
+                            <i class="ri-checkbox-circle-line me-1"></i>Bağlı
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="ri-links-line display-4 text-muted"></i>
+                    <h6 class="mt-3">Metrik kaynağı yok</h6>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+class PerformanceDashboardManager {
+    constructor() {
+        this.init();
+    }
+    
+    init() {
+        this.checkSourceStatuses();
+        this.bindEvents();
+        
+        // Periyodik güncelleme
+        setInterval(() => {
+            this.checkSourceStatuses();
+        }, 60000); // Her dakika
+    }
+    
+    async checkSourceStatuses() {
+        try {
+            // Metrik kaynakları durumunu kontrol et
+            const sources = document.querySelectorAll('[id^="source-status-"]');
+            
+            sources.forEach(async (element) => {
+                const sourceId = element.id.replace('source-status-', '');
+                
+                // Simulated status check - gerçek implementasyonda API çağrısı yapılacak
+                const isConnected = Math.random() > 0.1; // %90 bağlı olma olasılığı
+                
+                if (isConnected) {
+                    element.className = 'source-status connected';
+                    element.innerHTML = '<i class="ri-checkbox-circle-line me-1"></i>Bağlı';
+                } else {
+                    element.className = 'source-status disconnected';
+                    element.innerHTML = '<i class="ri-close-circle-line me-1"></i>Bağlantı Yok';
+                }
+            });
+        } catch (error) {
+            console.error('Source status check failed:', error);
+        }
+    }
+    
+    bindEvents() {
+        // Teknoloji kartlarına hover efekti
+        document.querySelectorAll('.technology-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    }
+}
+
+// Uyarı onaylama fonksiyonu
+async function acknowledgeAlert(alertId) {
+    try {
+        const response = await fetch(`/performance/api/alerts/${alertId}/acknowledge/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Uyarı öğesini kaldır
+            const alertElement = event.target.closest('.alert-item');
+            if (alertElement) {
+                alertElement.style.opacity = '0.5';
+                alertElement.style.pointerEvents = 'none';
+                
+                // Toast bildirimi göster
+                showToast('Uyarı onaylandı', 'success');
+            }
+        } else {
+            showToast('Uyarı onaylanamadı: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Alert acknowledge failed:', error);
+        showToast('Bir hata oluştu', 'error');
+    }
+}
+
+// Toast bildirimi göster
+function showToast(message, type = 'info') {
+    // Bootstrap toast implementasyonu
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Toast kaldırıldıktan sonra DOM'dan temizle
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1055';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Dashboard'u başlat
+document.addEventListener('DOMContentLoaded', () => {
+    window.performanceDashboard = new PerformanceDashboardManager();
+});
+</script>
+{% endblock %}

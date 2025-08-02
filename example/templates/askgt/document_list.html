@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if current_category %}{{ current_category.name }} - AskGT{% else %}AskGT - Bilgi Bankası{% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if current_category %}
+        <i class="{{ current_category.icon }} me-2"></i>{{ current_category.name }}
+    {% else %}
+        <i class="ri-book-open-line me-2"></i>AskGT - Bilgi Bankası
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Ana Sayfa</a></li>
+<li class="breadcrumb-item"><a href="{% url 'askgt:document_list' %}">AskGT</a></li>
+{% if current_category %}
+<li class="breadcrumb-item active">{{ current_category.name }}</li>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .document-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+        cursor: pointer;
+    }
+    
+    .document-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: #405189;
+    }
+    
+    .document-type-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .category-sidebar {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+    }
+    
+    .category-item {
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    
+    .category-item:hover {
+        background: #405189;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .category-item.active {
+        background: #405189;
+        color: white;
+    }
+    
+    .search-filters {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+    }
+    
+    .featured-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: linear-gradient(45deg, #f7b84b, #f06548);
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #405189 0%, #6f42c1 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .view-toggle {
+        background: white;
+        border-radius: 8px;
+        padding: 0.5rem;
+        display: inline-flex;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .view-toggle .btn {
+        border: none;
+        background: transparent;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        margin: 0 0.25rem;
+    }
+    
+    .view-toggle .btn.active {
+        background: #405189;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sol Sidebar - Kategoriler -->
+    <div class="col-xl-3 col-lg-4">
+        <div class="category-sidebar">
+            <h5 class="mb-3">
+                <i class="ri-folder-line me-2"></i>Kategoriler
+            </h5>
+            
+            <a href="{% url 'askgt:document_list' %}" 
+               class="category-item {% if not current_category %}active{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="ri-file-list-line me-2"></i>Tüm Dokümanlar</span>
+                    <span class="badge bg-primary">{{ total_documents }}</span>
+                </div>
+            </a>
+            
+            {% for category in askgt_categories %}
+            <a href="{% url 'askgt:category_documents' category.slug %}" 
+               class="category-item {% if current_category.slug == category.slug %}active{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="{{ category.icon }} me-2"></i>{{ category.name }}</span>
+                    <span class="badge bg-secondary">{{ category.get_document_count }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        
+        <!-- Öne Çıkan Dokümanlar -->
+        {% if featured_documents %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="ri-star-line text-warning me-2"></i>Öne Çıkan Dokümanlar
+                </h6>
+            </div>
+            <div class="card-body">
+                {% for doc in featured_documents %}
+                <div class="d-flex mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                    <div class="flex-shrink-0">
+                        <i class="{{ doc.category.icon }} text-{{ doc.category.color }}"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">
+                            <a href="{{ doc.get_absolute_url }}" class="text-decoration-none">
+                                {{ doc.title|truncatechars:40 }}
+                            </a>
+                        </h6>
+                        <small class="text-muted">
+                            <i class="ri-eye-line"></i> {{ doc.view_count }} görüntülenme
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Ana İçerik -->
+    <div class="col-xl-9 col-lg-8">
+        <!-- İstatistik Kartı -->
+        {% if current_category %}
+        <div class="stats-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-1">{{ current_category.name }}</h4>
+                    <p class="mb-0 opacity-75">{{ current_category.description|default:"Kategori açıklaması mevcut değil" }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="display-6">{{ total_documents }}</div>
+                    <small class="opacity-75">Doküman</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Arama ve Filtreler -->
+        <div class="search-filters">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Arama</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                        <input type="text" class="form-control" name="search" 
+                               value="{{ current_search }}" 
+                               placeholder="Doküman ara...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tip</label>
+                    <select class="form-select" name="type">
+                        <option value="">Tümü</option>
+                        {% for value, label in document_types %}
+                        <option value="{{ value }}" {% if value == current_type %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Kaynak</label>
+                    <select class="form-select" name="source">
+                        <option value="">Tümü</option>
+                        {% for value, label in source_types %}
+                        <option value="{{ value }}" {% if value == current_source %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Sıralama</label>
+                    <select class="form-select" name="order_by">
+                        <option value="-created_at" {% if current_order == '-created_at' %}selected{% endif %}>En Yeni</option>
+                        <option value="-view_count" {% if current_order == '-view_count' %}selected{% endif %}>En Popüler</option>
+                        <option value="title" {% if current_order == 'title' %}selected{% endif %}>A-Z</option>
+                        <option value="-last_modified" {% if current_order == '-last_modified' %}selected{% endif %}>Son Güncellenen</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ri-search-line"></i> Filtrele
+                        </button>
+                        <a href="{% if current_category %}{% url 'askgt:category_documents' current_category.slug %}{% else %}{% url 'askgt:document_list' %}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="ri-refresh-line"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Doküman Listesi -->
+        <div class="row">
+            {% if documents %}
+                {% for document in documents %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card document-card h-100 position-relative" 
+                         onclick="window.open('{{ document.get_absolute_url }}', '_blank')">
+                        
+                        {% if document.is_featured %}
+                        <div class="featured-badge">
+                            <i class="ri-star-fill"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="document-type-badge badge bg-{{ document.category.color }}-subtle text-{{ document.category.color }}">
+                                    {{ document.get_document_type_display }}
+                                </span>
+                                <small class="text-muted">
+                                    <i class="ri-time-line"></i> {{ document.created_at|date:"d.m.Y" }}
+                                </small>
+                            </div>
+                            
+                            <h5 class="card-title mb-2">{{ document.title|truncatechars:60 }}</h5>
+                            <p class="card-text text-muted mb-3">{{ document.get_display_summary|truncatechars:120 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="{{ document.category.icon }} text-{{ document.category.color }} me-2"></i>
+                                    <small class="text-muted">{{ document.category.name }}</small>
+                                </div>
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="ri-eye-line me-1"></i>
+                                    <small>{{ document.view_count }}</small>
+                                </div>
+                            </div>
+                            
+                            {% if document.get_tags_list %}
+                            <div class="mt-2">
+                                {% for tag in document.get_tags_list|slice:":3" %}
+                                <span class="badge bg-light text-dark me-1">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="ri-external-link-line me-1"></i>{{ document.get_source_type_display }}
+                                </small>
+                                <span class="btn btn-outline-primary btn-sm">
+                                    Görüntüle <i class="ri-arrow-right-line"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="col-12">
+                    <nav aria-label="Sayfa navigasyonu">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_order %}&order_by={{ current_order }}{% endif %}">
+                                    <i class="ri-arrow-left-line"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_order %}&order_by={{ current_order }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_source %}&source={{ current_source }}{% endif %}{% if current_order %}&order_by={{ current_order }}{% endif %}">
+                                    <i class="ri-arrow-right-line"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="ri-file-search-line display-4 text-muted"></i>
+                        <h5 class="mt-3">Doküman bulunamadı</h5>
+                        <p class="text-muted">Arama kriterlerinizi değiştirerek tekrar deneyin.</p>
+                        <a href="{% if current_category %}{% url 'askgt:category_documents' current_category.slug %}{% else %}{% url 'askgt:document_list' %}{% endif %}" 
+                           class="btn btn-primary">
+                            <i class="ri-refresh-line"></i> Filtreleri Temizle
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Doküman arama API'si
+class DocumentSearch {
+    constructor() {
+        this.searchInput = document.querySelector('input[name="search"]');
+        this.searchTimeout = null;
+        this.init();
+    }
+    
+    init() {
+        if (this.searchInput) {
+            this.searchInput.addEventListener('input', (e) => {
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => {
+                    this.performSearch(e.target.value);
+                }, 500);
+            });
+        }
+    }
+    
+    async performSearch(query) {
+        if (query.length < 3) return;
+        
+        try {
+            const categorySlug = '{{ current_category.slug|default:"" }}';
+            const url = `{% url 'askgt:document_search_api' %}?q=${encodeURIComponent(query)}&category=${categorySlug}&limit=5`;
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            this.showSearchSuggestions(data.results);
+        } catch (error) {
+            console.error('Search error:', error);
+        }
+    }
+    
+    showSearchSuggestions(results) {
+        // Arama önerileri gösterme implementasyonu
+        // Bu kısım geliştirilecek
+    }
+}
+
+// Sayfa yüklendiğinde başlat
+document.addEventListener('DOMContentLoaded', () => {
+    new DocumentSearch();
+});
+
+// Doküman kartlarına hover efekti
+document.querySelectorAll('.document-card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-5px)';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+    });
+});
+</script>
+{% endblock %}

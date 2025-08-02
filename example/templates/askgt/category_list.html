@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kategoriler - AskGT{% endblock %}
+{% block page_title %}AskGT Kategorileri{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Ana Sayfa</a></li>
+<li class="breadcrumb-item"><a href="{% url 'askgt:question_list' %}">AskGT</a></li>
+<li class="breadcrumb-item active">Kategoriler</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Soru Kategorileri</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for category in categories %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card border h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="avatar-sm bg-primary-subtle rounded">
+                                            <span class="avatar-title bg-primary-subtle text-primary rounded">
+                                                <i class="{{ category.icon }} fs-18"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h5 class="card-title mb-1">{{ category.name }}</h5>
+                                        <span class="badge bg-light text-dark">
+                                            {{ category.questions.count }} soru
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                {% if category.description %}
+                                <p class="text-muted mb-3">{{ category.description|truncatechars:100 }}</p>
+                                {% endif %}
+                                
+                                <a href="{% url 'askgt:question_list' %}?category={{ category.id }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="ri-arrow-right-line"></i> Soruları Görüntüle
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="ri-folder-line display-4 text-muted"></i>
+                            <h5 class="mt-3">Kategori bulunamadı</h5>
+                            <p class="text-muted">Henüz hiç kategori eklenmemiş.</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

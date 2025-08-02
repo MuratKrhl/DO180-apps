@@ -1,0 +1,435 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sertifika Yönetimi - Middleware Portal{% endblock %}
+{% block page_title %}Sertifika Yönetimi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .certificate-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 1px solid #e9ecef;
+    }
+    
+    .certificate-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        border-color: #405189;
+    }
+    
+    .expiry-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+    }
+    
+    .expiry-critical {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .expiry-warning {
+        background-color: #ffc107;
+        color: #000;
+    }
+    
+    .expiry-valid {
+        background-color: #198754;
+        color: white;
+    }
+    
+    .expiry-expired {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .sync-log-item {
+        padding: 1rem;
+        border-left: 4px solid #e9ecef;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .sync-log-item:hover {
+        background-color: #f8f9fa;
+        border-left-color: #405189;
+    }
+    
+    .sync-status-completed {
+        border-left-color: #198754;
+    }
+    
+    .sync-status-failed {
+        border-left-color: #dc3545;
+    }
+    
+    .sync-status-partial {
+        border-left-color: #ffc107;
+    }
+    
+    .sync-status-running {
+        border-left-color: #0dcaf0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Üst Sıra - İstatistik Kartları -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="stat-number">{{ total_certificates }}</div>
+                    <div class="stat-label">Toplam Sertifika</div>
+                </div>
+                <div class="flex-shrink-0">
+                    <i class="ri-shield-check-line" style="font-size: 2.5rem; opacity: 0.7;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-danger" style="border-width: 2px;">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="stat-number text-danger">{{ total_expired }}</div>
+                        <div class="stat-label text-muted">Süresi Dolmuş</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-error-warning-line text-danger" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-warning" style="border-width: 2px;">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="stat-number text-warning">{{ total_expiring_30 }}</div>
+                        <div class="stat-label text-muted">30 Gün İçinde</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-time-line text-warning" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-danger" style="border-width: 2px;">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="stat-number text-danger">{{ total_expiring_7 }}</div>
+                        <div class="stat-label text-muted">7 Gün İçinde</div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-alarm-warning-line text-danger" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hızlı Erişim Butonları -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'certificates:kdb_list' %}" class="btn btn-primary">
+                        <i class="ri-database-2-line me-2"></i>KDB Sertifikaları ({{ kdb_stats.total }})
+                    </a>
+                    <a href="{% url 'certificates:java_list' %}" class="btn btn-success">
+                        <i class="ri-cup-line me-2"></i>Java Sertifikaları ({{ java_stats.total }})
+                    </a>
+                    <a href="{% url 'certificates:kdb_list' %}?expiry_status=expiring_30" class="btn btn-warning">
+                        <i class="ri-time-line me-2"></i>Yaklaşan Süreler
+                    </a>
+                    <a href="{% url 'certificates:export_certificates' %}" class="btn btn-outline-primary">
+                        <i class="ri-download-line me-2"></i>Dışa Aktar
+                    </a>
+                    {% if perms.certificates.add_certificatesynclog %}
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#syncModal">
+                        <i class="ri-refresh-line me-2"></i>Senkronize Et
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ana İçerik -->
+<div class="row">
+    <!-- Sol: Yaklaşan Süreler -->
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="ri-alarm-warning-line me-2"></i>Yaklaşan Sertifika Süreleri
+                </h4>
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        30 Gün İçinde
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="loadExpiringCertificates(7)">7 Gün İçinde</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="loadExpiringCertificates(15)">15 Gün İçinde</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="loadExpiringCertificates(30)">30 Gün İçinde</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="loadExpiringCertificates(90)">90 Gün İçinde</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="expiring-certificates-container">
+                    {% if expiring_certificates %}
+                        {% for cert in expiring_certificates %}
+                        <div class="certificate-card card mb-3" onclick="window.location.href='{{ cert.url }}'">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="badge bg-{{ cert.type|lower }}-subtle text-{{ cert.type|lower }} me-2">
+                                                {{ cert.type }}
+                                            </span>
+                                            <h6 class="mb-0">{{ cert.common_name }}</h6>
+                                        </div>
+                                        <p class="text-muted mb-2 small">
+                                            Bitiş: {{ cert.valid_to|date:"d.m.Y H:i" }}
+                                        </p>
+                                        {% if cert.servers %}
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for server in cert.servers %}
+                                            <span class="badge bg-light text-dark">{{ server }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="expiry-badge expiry-{{ cert.expiry_status }}">
+                                            {{ cert.days_until_expiry }} gün
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="ri-shield-check-line display-4 text-success"></i>
+                            <h6 class="mt-3">Yaklaşan sertifika süresi bulunamadı</h6>
+                            <p class="text-muted">Tüm sertifikalar geçerli durumda.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: Senkronizasyon Logları ve Uyarılar -->
+    <div class="col-xl-4">
+        <!-- Son Senkronizasyon Logları -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="ri-refresh-line me-2"></i>Son Senkronizasyonlar
+                </h5>
+                <a href="{% url 'certificates:sync_logs' %}" class="btn btn-outline-primary btn-sm">
+                    Tümünü Gör
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_sync_logs %}
+                    {% for log in recent_sync_logs %}
+                    <div class="sync-log-item sync-status-{{ log.status }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ log.get_sync_type_display }}</h6>
+                                <p class="text-muted mb-1 small">
+                                    {{ log.started_at|date:"d.m.Y H:i" }}
+                                </p>
+                                <div class="d-flex gap-3 small">
+                                    <span class="text-success">✓ {{ log.total_created }}</span>
+                                    <span class="text-info">↻ {{ log.total_updated }}</span>
+                                    <span class="text-danger">✗ {{ log.total_errors }}</span>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-{{ log.status_color }}">
+                                    {{ log.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="ri-history-line display-6 text-muted"></i>
+                        <p class="text-muted mb-0">Senkronizasyon logu bulunamadı</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Aktif Uyarılar -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="ri-notification-3-line me-2"></i>Aktif Uyarılar
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if active_alerts > 0 %}
+                    <div class="alert alert-warning">
+                        <i class="ri-alert-line me-2"></i>
+                        <strong>{{ active_alerts }}</strong> aktif uyarı bulunuyor.
+                        <a href="{% url 'admin:certificates_certificatealert_changelist' %}" class="alert-link">
+                            Detayları görüntüle
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="ri-checkbox-circle-line display-6 text-success"></i>
+                        <p class="text-muted mb-0">Aktif uyarı bulunmuyor</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Senkronizasyon Modal -->
+{% if perms.certificates.add_certificatesynclog %}
+<div class="modal fade" id="syncModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sertifika Senkronizasyonu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'certificates:trigger_sync' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="sync_type" class="form-label">Senkronizasyon Tipi</label>
+                        <select class="form-select" id="sync_type" name="sync_type" required>
+                            <option value="">Seçiniz...</option>
+                            <option value="kdb_appviewx">KDB - AppViewX</option>
+                            <option value="kdb_sql">KDB - SQL Database</option>
+                            <option value="java_keystore">Java - Keystore</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="ri-information-line me-2"></i>
+                        Senkronizasyon arka planda çalışacak ve tamamlandığında bildirim alacaksınız.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Başlat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function loadExpiringCertificates(days) {
+    const container = document.getElementById('expiring-certificates-container');
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
+    
+    fetch(`/certificates/api/expiring/?days=${days}&limit=20`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.certificates && data.certificates.length > 0) {
+                container.innerHTML = data.certificates.map(cert => `
+                    <div class="certificate-card card mb-3" onclick="window.location.href='${cert.url}'">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge bg-${cert.type.toLowerCase()}-subtle text-${cert.type.toLowerCase()} me-2">
+                                            ${cert.type}
+                                        </span>
+                                        <h6 class="mb-0">${cert.common_name}</h6>
+                                    </div>
+                                    <p class="text-muted mb-2 small">
+                                        Bitiş: ${new Date(cert.valid_to).toLocaleDateString('tr-TR')}
+                                    </p>
+                                    ${cert.servers.length > 0 ? `
+                                        <div class="d-flex flex-wrap gap-1">
+                                            ${cert.servers.map(server => `<span class="badge bg-light text-dark">${server}</span>`).join('')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <span class="expiry-badge expiry-${cert.expiry_status}">
+                                        ${cert.days_until_expiry} gün
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="ri-shield-check-line display-4 text-success"></i>
+                        <h6 class="mt-3">${days} gün içinde süresi dolacak sertifika bulunamadı</h6>
+                        <p class="text-muted">Tüm sertifikalar geçerli durumda.</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="ri-error-warning-line display-4 text-danger"></i>
+                    <h6 class="mt-3">Veri yüklenirken hata oluştu</h6>
+                </div>
+            `;
+        });
+}
+
+// Auto-refresh every 5 minutes
+setInterval(() => {
+    loadExpiringCertificates(30);
+}, 300000);
+</script>
+{% endblock %}

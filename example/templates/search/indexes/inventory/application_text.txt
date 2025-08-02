@@ -1,0 +1,6 @@
+{{ object.name }}
+{{ object.description }}
+{{ object.get_application_type_display }}
+{{ object.version }}
+{{ object.server.hostname }}
+{{ object.context_path }}

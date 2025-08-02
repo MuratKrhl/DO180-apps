@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="tr" data-bs-theme="light">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Giriş - Middleware Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="Middleware Portal Giriş Sayfası" name="description" />
+    <meta content="Middleware Team" name="author" />
+    
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    
+    <!-- Bootstrap Css -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Icons Css -->
+    <link href="/static/css/icons.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- App Css-->
+    <link href="/static/css/app.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Custom Login Css -->
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            margin: 20px;
+        }
+        
+        .login-left {
+            background: linear-gradient(135deg, #405189 0%, #364574 100%);
+            color: white;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-left::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+        
+        .login-logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .tech-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .tech-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .tech-icon:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+        
+        .login-right {
+            padding: 60px 40px;
+        }
+        
+        .login-form-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #405189;
+            margin-bottom: 0.5rem;
+        }
+        
+        .login-form-subtitle {
+            color: #6c757d;
+            margin-bottom: 2rem;
+        }
+        
+        .form-floating {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-floating > .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1rem 0.75rem;
+            height: auto;
+            transition: all 0.3s ease;
+        }
+        
+        .form-floating > .form-control:focus {
+            border-color: #405189;
+            box-shadow: 0 0 0 0.2rem rgba(64, 81, 137, 0.25);
+        }
+        
+        .form-floating > label {
+            color: #6c757d;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #405189 0%, #364574 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .btn-login:hover {
+            background: linear-gradient(135deg, #364574 0%, #2d3a5f 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(64, 81, 137, 0.3);
+        }
+        
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-check-input:checked {
+            background-color: #405189;
+            border-color: #405189;
+        }
+        
+        .alert {
+            border-radius: 12px;
+            border: none;
+            margin-bottom: 1.5rem;
+        }
+        
+        .locked-message {
+            text-align: center;
+            padding: 2rem;
+            color: #dc3545;
+        }
+        
+        .locked-message i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .login-container {
+                margin: 10px;
+            }
+            
+            .login-left {
+                padding: 40px 20px;
+            }
+            
+            .login-right {
+                padding: 40px 20px;
+            }
+            
+            .login-logo {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="row g-0 h-100">
+            <!-- Sol Panel - Branding -->
+            <div class="col-lg-6">
+                <div class="login-left h-100">
+                    <div class="login-logo">
+                        <i class="ri-server-line"></i>
+                        Middleware Portal
+                    </div>
+                    <p class="login-subtitle">
+                        Kurumsal middleware altyapınızı tek noktadan yönetin
+                    </p>
+                    
+                    <div class="tech-icons">
+                        <div class="tech-icon" title="JBoss EAP">
+                            <i class="ri-fire-line"></i>
+                        </div>
+                        <div class="tech-icon" title="OpenShift">
+                            <i class="ri-cloud-line"></i>
+                        </div>
+                        <div class="tech-icon" title="Nginx">
+                            <i class="ri-global-line"></i>
+                        </div>
+                        <div class="tech-icon" title="WebSphere">
+                            <i class="ri-database-line"></i>
+                        </div>
+                        <div class="tech-icon" title="Apache">
+                            <i class="ri-rocket-line"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sağ Panel - Login Form -->
+            <div class="col-lg-6">
+                <div class="login-right h-100 d-flex flex-column justify-content-center">
+                    {% if locked %}
+                        <div class="locked-message">
+                            <i class="ri-lock-line"></i>
+                            <h4>Hesap Geçici Olarak Kilitlendi</h4>
+                            <p>Çok fazla başarısız giriş denemesi nedeniyle hesabınız geçici olarak kilitlenmiştir.</p>
+                            <p>Lütfen daha sonra tekrar deneyin.</p>
+                        </div>
+                    {% else %}
+                        <div>
+                            <h2 class="login-form-title">Hoşgeldiniz</h2>
+                            <p class="login-form-subtitle">Devam etmek için giriş yapın</p>
+                            
+                            <!-- Messages -->
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            <!-- Login Form -->
+                            <form method="post" novalidate>
+                                {% csrf_token %}
+                                
+                                <div class="form-floating">
+                                    {{ form.username }}
+                                    <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                                    {% if form.username.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.username.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-floating">
+                                    {{ form.password }}
+                                    <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                                    {% if form.password.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.password.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="remember-me">
+                                    {{ form.remember_me }}
+                                    <label for="{{ form.remember_me.id_for_label }}" class="form-check-label">
+                                        {{ form.remember_me.label }}
+                                    </label>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-login">
+                                    <i class="ri-login-circle-line me-2"></i>
+                                    Giriş Yap
+                                </button>
+                            </form>
+                            
+                            <div class="text-center mt-4">
+                                <small class="text-muted">
+                                    <i class="ri-shield-check-line me-1"></i>
+                                    LDAP kimlik doğrulama ile güvenli giriş
+                                </small>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script src="/static/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-focus first input
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstInput = document.querySelector('input[type="text"], input[type="email"]');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        });
+        
+        // Form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                const forms = document.getElementsByTagName('form');
+                Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+</body>
+
+</html>

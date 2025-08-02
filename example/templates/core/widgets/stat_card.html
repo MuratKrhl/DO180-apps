@@ -1,0 +1,16 @@
+<div class="card dashboard-card h-100 {% if url %}cursor-pointer{% endif %}" {% if url %}onclick="window.location.href='{{ url }}'"{% endif %}>
+    <div class="card-body">
+        <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+                <div class="stat-number text-{{ color }}">{{ value }}</div>
+                <div class="stat-label">{{ title }}</div>
+                {% if subtitle %}
+                <small class="text-muted">{{ subtitle }}</small>
+                {% endif %}
+            </div>
+            <div class="flex-shrink-0">
+                <i class="{{ icon }} stat-icon text-{{ color }}"></i>
+            </div>
+        </div>
+    </div>
+</div>

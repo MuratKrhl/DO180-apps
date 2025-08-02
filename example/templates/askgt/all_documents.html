@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AskGT - Tüm Dokümanlar{% endblock %}
+{% block page_title %}
+    <i class="ri-book-open-line me-2"></i>AskGT - Tüm Dokümanlar
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Ana Sayfa</a></li>
+<li class="breadcrumb-item active">AskGT</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sol Sidebar - İstatistikler -->
+    <div class="col-xl-3">
+        <!-- Kategori İstatistikleri -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="ri-pie-chart-line me-2"></i>Kategori Dağılımı
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for category in category_stats %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="{{ category.icon }} text-{{ category.color }} me-2"></i>
+                        <span>{{ category.name }}</span>
+                    </div>
+                    <span class="badge bg-primary">{{ category.document_count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Popüler Dokümanlar -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="ri-fire-line me-2"></i>Popüler Dokümanlar
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for doc in popular_documents %}
+                <div class="d-flex mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                    <div class="flex-shrink-0">
+                        <span class="badge bg-warning">{{ forloop.counter }}</span>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">
+                            <a href="{{ doc.get_absolute_url }}" class="text-decoration-none">
+                                {{ doc.title|truncatechars:40 }}
+                            </a>
+                        </h6>
+                        <small class="text-muted">
+                            <i class="ri-eye-line"></i> {{ doc.view_count }} görüntülenme
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ana İçerik -->
+    <div class="col-xl-9">
+        <!-- Arama -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-8">
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">
+                                <i class="ri-search-line"></i>
+                            </span>
+                            <input type="text" class="form-control" name="search" 
+                                   value="{{ request.GET.search }}" 
+                                   placeholder="Doküman, kategori veya etiket ara...">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="ri-search-line me-2"></i>Ara
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Doküman Listesi -->
+        <div class="row">
+            {% if documents %}
+                {% for document in documents %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 document-card position-relative" 
+                         onclick="window.open('{{ document.get_absolute_url }}', '_blank')">
+                        
+                        {% if document.is_featured %}
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-warning">
+                                <i class="ri-star-fill"></i> Öne Çıkan
+                            </span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="badge bg-{{ document.category.color }}-subtle text-{{ document.category.color }}">
+                                    {{ document.get_document_type_display }}
+                                </span>
+                                <small class="text-muted">{{ document.created_at|date:"d.m.Y" }}</small>
+                            </div>
+                            
+                            <h5 class="card-title">{{ document.title }}</h5>
+                            <p class="card-text text-muted">{{ document.get_display_summary|truncatechars:150 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="{{ document.category.icon }} text-{{ document.category.color }} me-2"></i>
+                                    <small>{{ document.category.name }}</small>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="ri-eye-line"></i> {{ document.view_count }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="col-12">
+                    <nav aria-label="Sayfa navigasyonu">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    Önceki
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    Sonraki
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="ri-file-search-line display-4 text-muted"></i>
+                        <h4 class="mt-3">Doküman bulunamadı</h4>
+                        <p class="text-muted">Arama kriterlerinizi değiştirerek tekrar deneyin.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

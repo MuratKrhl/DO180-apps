@@ -1,0 +1,844 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ application.name }} - Envanter{% endblock %}
+{% block page_title %}{{ application.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .info-card {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .info-card:hover {
+        border-color: #405189;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: #405189;
+        color: white;
+        border-radius: 6px;
+    }
+    
+    .metric-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        border: 1px solid #e9ecef;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .operation-item {
+        padding: 1rem;
+        border-left: 3px solid #e9ecef;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .operation-item.success {
+        border-left-color: #0ab39c;
+    }
+    
+    .operation-item.failed {
+        border-left-color: #f06548;
+    }
+    
+    .operation-item.in_progress {
+        border-left-color: #f7b84b;
+    }
+    
+    .certificate-card {
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .certificate-card.expiring {
+        border-color: #f7b84b;
+        background: #fff8f0;
+    }
+    
+    .certificate-card.expired {
+        border-color: #f06548;
+        background: #fff5f5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Uygulama Başlığı -->
+<div class="detail-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <div class="avatar-lg bg-white bg-opacity-20 rounded">
+                        <span class="avatar-title bg-transparent text-white rounded">
+                            <i class="ri-apps-line display-6"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <h2 class="mb-1">{{ application.name }}</h2>
+                    <p class="mb-0 opacity-75">
+                        {{ application.get_application_type_display }} {{ application.version }}
+                        {% if application.is_jboss8 %}
+                            <span class="badge bg-success ms-2">JBoss 8</span>
+                        {% endif %}
+                    </p>
+                    <p class="mb-0 opacity-75">
+                        <i class="ri-server-line me-1"></i>{{ application.server.hostname }} 
+                        <span class="mx-2">|</span>
+                        <i class="ri-global-line me-1"></i>{{ application.full_url }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="d-flex flex-column align-items-md-end">
+                <span class="badge bg-{{ application.status_color }} fs-6 mb-2">
+                    {{ application.get_status_display }}
+                </span>
+                <span class="badge bg-{{ application.criticality_color }}-subtle text-{{ application.criticality_color }}">
+                    {{ application.get_criticality_display }} Kritiklik
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hızlı Aksiyonlar -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Hızlı İşlemler</h6>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary" onclick="checkApplicationStatus()">
+                            <i class="ri-refresh-line"></i> Durum Kontrol Et
+                        </button>
+                        <a href="{{ application.full_url }}" target="_blank" class="btn btn-outline-info">
+                            <i class="ri-external-link-line"></i> Uygulamayı Aç
+                        </a>
+                        {% if perms.inventory.change_application %}
+                        <a href="{% url 'inventory:application_edit' application.id %}" class="btn btn-outline-warning">
+                            <i class="ri-edit-line"></i> Düzenle
+                        </a>
+                        {% endif %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="ri-more-line"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="exportApplicationData()">
+                                    <i class="ri-download-line"></i> Veri Dışa Aktar
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="viewLogs()">
+                                    <i class="ri-file-text-line"></i> Logları Görüntüle
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% if perms.inventory.delete_application %}
+                                <li><a class="dropdown-item text-danger" href="{% url 'inventory:application_delete' application.id %}">
+                                    <i class="ri-delete-bin-line"></i> Sil
+                                </a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sekmeli İçerik -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs nav-tabs-custom" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#overview" role="tab">
+                            <i class="ri-dashboard-line me-2"></i>Genel Bakış
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#certificates" role="tab">
+                            <i class="ri-shield-check-line me-2"></i>Sertifikalar
+                            {% if certificates %}
+                                <span class="badge bg-primary ms-1">{{ certificates.count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#operations" role="tab">
+                            <i class="ri-history-line me-2"></i>Operasyon Geçmişi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#askgt" role="tab">
+                            <i class="ri-question-answer-line me-2"></i>İlgili Makaleler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#performance" role="tab">
+                            <i class="ri-line-chart-line me-2"></i>Performans
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body">
+                <div class="tab-content">
+                    <!-- Genel Bakış -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                        <div class="row">
+                            <!-- Sol Kolon - Temel Bilgiler -->
+                            <div class="col-md-6">
+                                <div class="info-card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="ri-information-line me-2"></i>Temel Bilgiler
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Uygulama Adı</label>
+                                                <p class="mb-0 fw-medium">{{ application.name }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Tip</label>
+                                                <p class="mb-0">
+                                                    <span class="badge bg-info-subtle text-info">
+                                                        {{ application.get_application_type_display }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Versiyon</label>
+                                                <p class="mb-0 fw-medium">{{ application.version }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Port</label>
+                                                <p class="mb-0 fw-medium">{{ application.port }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Context Path</label>
+                                                <p class="mb-0">{{ application.context_path|default:"-" }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">SSL</label>
+                                                <p class="mb-0">
+                                                    {% if application.ssl_enabled %}
+                                                        <span class="badge bg-success">Aktif</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Pasif</span>
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Sunucu Bilgileri -->
+                                <div class="info-card mt-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="ri-server-line me-2"></i>Sunucu Bilgileri
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Hostname</label>
+                                                <p class="mb-0 fw-medium">
+                                                    <a href="{% url 'inventory:server_detail' application.server.id %}" class="text-decoration-none">
+                                                        {{ application.server.hostname }}
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">IP Adresi</label>
+                                                <p class="mb-0">{{ application.server.ip_address }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">İşletim Sistemi</label>
+                                                <p class="mb-0">{{ application.server.get_operating_system_display }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Ortam</label>
+                                                <p class="mb-0">
+                                                    <span class="badge bg-{{ application.server.environment_color }}-subtle text-{{ application.server.environment_color }}">
+                                                        {{ application.server.get_environment_display }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Lokasyon</label>
+                                                <p class="mb-0">{{ application.server.location }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Kaynak</label>
+                                                <p class="mb-0">
+                                                    {{ application.server.cpu_cores }} CPU, 
+                                                    {{ application.server.memory_gb }}GB RAM
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Sağ Kolon - Durum ve Migrasyon -->
+                            <div class="col-md-6">
+                                <!-- Durum Bilgileri -->
+                                <div class="info-card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="ri-pulse-line me-2"></i>Durum Bilgileri
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Mevcut Durum</label>
+                                                <p class="mb-0">
+                                                    <span class="badge bg-{{ application.status_color }} fs-6" id="current-status">
+                                                        {{ application.get_status_display }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Son Kontrol</label>
+                                                <p class="mb-0" id="last-check">
+                                                    {% if application.last_check %}
+                                                        {{ application.last_check|timesince }} önce
+                                                    {% else %}
+                                                        Hiç kontrol edilmedi
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Yanıt Süresi</label>
+                                                <p class="mb-0" id="response-time">
+                                                    {% if application.response_time %}
+                                                        {{ application.response_time|floatformat:0 }}ms
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Kritiklik</label>
+                                                <p class="mb-0">
+                                                    <span class="badge bg-{{ application.criticality_color }}-subtle text-{{ application.criticality_color }}">
+                                                        {{ application.get_criticality_display }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Migrasyon Bilgileri -->
+                                <div class="info-card mt-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="ri-rocket-line me-2"></i>Migrasyon Bilgileri
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Migrasyon Durumu</label>
+                                                <p class="mb-0">
+                                                    <span class="badge bg-{{ application.migration_status_color }}-subtle text-{{ application.migration_status_color }}">
+                                                        {{ application.get_migration_status_display }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Hedef Versiyon</label>
+                                                <p class="mb-0">{{ application.target_version|default:"-" }}</p>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label text-muted">Migrasyon Tarihi</label>
+                                                <p class="mb-0">{{ application.migration_date|default:"-" }}</p>
+                                            </div>
+                                            {% if application.migration_notes %}
+                                            <div class="col-12">
+                                                <label class="form-label text-muted">Migrasyon Notları</label>
+                                                <p class="mb-0">{{ application.migration_notes }}</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Bakım Bilgileri -->
+                                <div class="info-card mt-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="ri-tools-line me-2"></i>Bakım Bilgileri
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label text-muted">Bakım Penceresi</label>
+                                                <p class="mb-0">{{ application.maintenance_window|default:"Belirtilmemiş" }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Oluşturulma</label>
+                                                <p class="mb-0">{{ application.created_at|date:"d.m.Y H:i" }}</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted">Son Güncelleme</label>
+                                                <p class="mb-0">{{ application.updated_at|date:"d.m.Y H:i" }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Açıklama -->
+                        {% if application.description %}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="info-card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="ri-file-text-line me-2"></i>Açıklama
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="mb-0">{{ application.description }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Sertifikalar -->
+                    <div class="tab-pane fade" id="certificates" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">SSL/TLS Sertifikaları</h5>
+                            {% if perms.inventory.add_certificate %}
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCertificateModal">
+                                <i class="ri-add-line"></i> Sertifika Ekle
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        {% if certificates %}
+                            {% for certificate in certificates %}
+                            <div class="certificate-card {% if certificate.is_expired %}expired{% elif certificate.is_expiring_soon %}expiring{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ certificate.name }}</h6>
+                                        <p class="text-muted mb-2">{{ certificate.get_cert_type_display }}</p>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Veren:</small>
+                                                <p class="mb-0">{{ certificate.issuer }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Konu:</small>
+                                                <p class="mb-0">{{ certificate.subject }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Veriliş Tarihi:</small>
+                                                <p class="mb-0">{{ certificate.issue_date }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Bitiş Tarihi:</small>
+                                                <p class="mb-0">
+                                                    {{ certificate.expiry_date }}
+                                                    {% if certificate.is_expired %}
+                                                        <span class="badge bg-danger ms-1">Süresi Dolmuş</span>
+                                                    {% elif certificate.is_expiring_soon %}
+                                                        <span class="badge bg-warning ms-1">{{ certificate.days_until_expiry }} gün kaldı</span>
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="badge bg-{{ certificate.status_color }}">
+                                            {% if certificate.is_expired %}
+                                                Süresi Dolmuş
+                                            {% elif certificate.is_expiring_soon %}
+                                                Yakında Bitecek
+                                            {% else %}
+                                                Geçerli
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="ri-shield-check-line display-4 text-muted"></i>
+                                <h6 class="mt-3">Sertifika bulunamadı</h6>
+                                <p class="text-muted">Bu uygulama için henüz sertifika kaydı bulunmuyor.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Operasyon Geçmişi -->
+                    <div class="tab-pane fade" id="operations" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Son İşlemler</h5>
+                            {% if perms.inventory.add_operationhistory %}
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOperationModal">
+                                <i class="ri-add-line"></i> İşlem Ekle
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        {% if operation_history %}
+                            {% for operation in operation_history %}
+                            <div class="operation-item {{ operation.status }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ operation.get_operation_type_display }}</h6>
+                                        <p class="mb-2">{{ operation.description }}</p>
+                                        <div class="d-flex align-items-center text-muted">
+                                            <small>
+                                                <i class="ri-user-line me-1"></i>{{ operation.executed_by.get_full_name|default:operation.executed_by.username }}
+                                            </small>
+                                            <span class="mx-2">•</span>
+                                            <small>
+                                                <i class="ri-time-line me-1"></i>{{ operation.execution_time|date:"d.m.Y H:i" }}
+                                            </small>
+                                            {% if operation.duration %}
+                                            <span class="mx-2">•</span>
+                                            <small>
+                                                <i class="ri-timer-line me-1"></i>{{ operation.duration }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="badge bg-{{ operation.status_color }}">
+                                            {{ operation.get_status_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <div class="text-center mt-3">
+                                <a href="#" class="btn btn-outline-primary">
+                                    <i class="ri-history-line"></i> Tüm Geçmişi Görüntüle
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="ri-history-line display-4 text-muted"></i>
+                                <h6 class="mt-3">Operasyon geçmişi bulunamadı</h6>
+                                <p class="text-muted">Bu uygulama için henüz işlem kaydı bulunmuyor.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- İlgili AskGT Makaleleri -->
+                    <div class="tab-pane fade" id="askgt" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">İlgili Makaleler</h5>
+                            <a href="{% url 'askgt:question_list' %}?search={{ application.name }}" class="btn btn-outline-primary">
+                                <i class="ri-search-line"></i> Daha Fazla
+                            </a>
+                        </div>
+                        
+                        {% if related_questions %}
+                            {% for question in related_questions %}
+                            <div class="d-flex mb-3 pb-3 border-bottom">
+                                <div class="flex-shrink-0 me-3">
+                                    <div class="avatar-sm bg-info-subtle rounded">
+                                        <span class="avatar-title bg-info-subtle text-info rounded">
+                                            <i class="ri-question-answer-line"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <a href="{% url 'askgt:question_detail' question.id %}" class="text-decoration-none">
+                                            {{ question.title }}
+                                        </a>
+                                    </h6>
+                                    <p class="text-muted mb-1">{{ question.category.name }}</p>
+                                    <small class="text-muted">
+                                        <i class="ri-eye-line"></i> {{ question.view_count }} görüntülenme
+                                        <span class="mx-2">•</span>
+                                        <i class="ri-time-line"></i> {{ question.created_at|timesince }} önce
+                                    </small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="ri-question-answer-line display-4 text-muted"></i>
+                                <h6 class="mt-3">İlgili makale bulunamadı</h6>
+                                <p class="text-muted">Bu uygulama ile ilgili AskGT makalesi bulunmuyor.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Performans -->
+                    <div class="tab-pane fade" id="performance" role="tabpanel">
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-value text-primary">
+                                        {{ performance_metrics.avg_response_time|floatformat:0 }}ms
+                                    </div>
+                                    <div class="text-muted">Ortalama Yanıt Süresi</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-value text-success">
+                                        {{ performance_metrics.uptime_percentage }}%
+                                    </div>
+                                    <div class="text-muted">Uptime</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-value text-info">
+                                        24/7
+                                    </div>
+                                    <div class="text-muted">Monitoring</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performans Grafiği -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Son 24 Saat Performans Trendi</h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="performance-chart" height="300"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Benzer Uygulamalar -->
+                        {% if similar_applications %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Benzer Uygulamalar</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for similar_app in similar_applications %}
+                                    <div class="col-md-6 mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0 me-2">
+                                                <span class="badge bg-{{ similar_app.status_color }}">
+                                                    {{ similar_app.get_status_display }}
+                                                </span>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <a href="{% url 'inventory:application_detail' similar_app.id %}" class="text-decoration-none">
+                                                    {{ similar_app.name }}
+                                                </a>
+                                                <br>
+                                                <small class="text-muted">{{ similar_app.server.hostname }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Uygulama durum kontrolü
+async function checkApplicationStatus() {
+    const statusElement = document.getElementById('current-status');
+    const lastCheckElement = document.getElementById('last-check');
+    const responseTimeElement = document.getElementById('response-time');
+    
+    const originalStatus = statusElement.textContent;
+    statusElement.innerHTML = '<i class="ri-loader-4-line spin"></i> Kontrol ediliyor...';
+    statusElement.className = 'badge bg-warning fs-6';
+    
+    try {
+        const response = await fetch(`/inventory/api/applications/{{ application.id }}/check-status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            statusElement.textContent = data.status_display;
+            statusElement.className = `badge bg-${data.status_color} fs-6`;
+            
+            lastCheckElement.textContent = 'Az önce';
+            
+            if (data.response_time) {
+                responseTimeElement.textContent = Math.round(data.response_time) + 'ms';
+            }
+            
+            showToast('Başarılı', 'Uygulama durumu güncellendi', 'success');
+        } else {
+            throw new Error('Durum kontrolü başarısız');
+        }
+    } catch (error) {
+        statusElement.textContent = originalStatus;
+        statusElement.className = 'badge bg-secondary fs-6';
+        showToast('Hata', 'Durum kontrolü sırasında hata oluştu', 'error');
+    }
+}
+
+// Performans grafiği
+function initPerformanceChart() {
+    const ctx = document.getElementById('performance-chart');
+    if (!ctx) return;
+    
+    // Örnek veri - gerçek implementasyonda API'den gelecek
+    const data = {
+        labels: Array.from({length: 24}, (_, i) => {
+            const hour = new Date();
+            hour.setHours(hour.getHours() - (23 - i));
+            return hour.getHours() + ':00';
+        }),
+        datasets: [{
+            label: 'Yanıt Süresi (ms)',
+            data: Array.from({length: 24}, () => Math.random() * 200 + 100),
+            borderColor: '#405189',
+            backgroundColor: 'rgba(64, 81, 137, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Toast bildirimi
+function showToast(title, message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white bg-${type === 'error' ? 'danger' : type}" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}:</strong> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1055';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', () => {
+    initPerformanceChart();
+});
+
+// Tab değiştiğinde grafiği yeniden çiz
+document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', (e) => {
+        if (e.target.getAttribute('href') === '#performance') {
+            setTimeout(initPerformanceChart, 100);
+        }
+    });
+});
+</script>
+{% endblock %}

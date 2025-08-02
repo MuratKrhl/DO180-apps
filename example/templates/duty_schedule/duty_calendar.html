@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nöbet Takvimi - Middleware Portal{% endblock %}
+{% block page_title %}Nöbet Takvimi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .calendar-header {
+        background: linear-gradient(135deg, #405189 0%, #6f42c1 100%);
+        color: white;
+        padding: 1.5rem;
+    }
+    
+    .calendar-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .calendar-nav button {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+    }
+    
+    .calendar-nav button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+    }
+    
+    .calendar-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .calendar-table th {
+        background: #f8f9fa;
+        padding: 1rem;
+        text-align: center;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .calendar-table td {
+        height: 120px;
+        width: 14.28%;
+        vertical-align: top;
+        padding: 0.5rem;
+        border: 1px solid #e9ecef;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .calendar-table td:hover {
+        background: #f8f9fa;
+    }
+    
+    .calendar-day {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+    
+    .calendar-day.other-month {
+        color: #adb5bd;
+    }
+    
+    .calendar-day.today {
+        background: #405189;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.5rem auto;
+    }
+    
+    .duty-info {
+        background: #e3f2fd;
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+        border-left: 3px solid #2196f3;
+    }
+    
+    .duty-info.today {
+        background: #405189;
+        color: white;
+        border-left-color: #fff;
+    }
+    
+    .duty-info.weekend {
+        background: #fff3cd;
+        border-left-color: #ffc107;
+    }
+    
+    .duty-info.holiday {
+        background: #f8d7da;
+        border-left-color: #dc3545;
+    }
+    
+    .duty-person {
+        font-weight: 600;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .duty-contact {
+        font-size: 0.7rem;
+        opacity: 0.8;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .legend {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+    }
+    
+    @media (max-width: 768px) {
+        .calendar-table td {
+            height: 80px;
+            padding: 0.25rem;
+        }
+        
+        .duty-info {
+            font-size: 0.65rem;
+            padding: 0.125rem 0.25rem;
+        }
+        
+        .calendar-nav {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calendar-container">
+    <!-- Takvim Başlığı -->
+    <div class="calendar-header">
+        <div class="calendar-nav">
+            <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-link text-white p-0">
+                <i class="ri-arrow-left-line me-1"></i>Önceki Ay
+            </a>
+            <h3 class="mb-0">{{ month_name }} {{ year }}</h3>
+            <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-link text-white p-0">
+                Sonraki Ay<i class="ri-arrow-right-line ms-1"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Takvim Tablosu -->
+    <div class="p-3">
+        <table class="calendar-table">
+            <thead>
+                <tr>
+                    <th>Pazartesi</th>
+                    <th>Salı</th>
+                    <th>Çarşamba</th>
+                    <th>Perşembe</th>
+                    <th>Cuma</th>
+                    <th>Cumartesi</th>
+                    <th>Pazar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in calendar %}
+                <tr>
+                    {% for day in week %}
+                    <td>
+                        {% if day != 0 %}
+                            <div class="calendar-day {% if day in duties %}{% if duties|lookup:day.is_today %}today{% endif %}{% endif %}">
+                                {{ day }}
+                            </div>
+                            {% if day in duties %}
+                                {% with duty=duties|lookup:day %}
+                                <div class="duty-info {% if duty.is_today %}today{% elif duty.is_weekend %}weekend{% elif duty.is_holiday %}holiday{% endif %}">
+                                    <span class="duty-person">{{ duty.primary_person }}</span>
+                                    {% if duty.phone %}
+                                        <span class="duty-contact">{{ duty.phone }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endwith %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Açıklama -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #405189;"></div>
+                <span>Bugün</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e3f2fd; border-left: 3px solid #2196f3;"></div>
+                <span>Normal Gün</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #fff3cd; border-left: 3px solid #ffc107;"></div>
+                <span>Hafta Sonu</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f8d7da; border-left: 3px solid #dc3545;"></div>
+                <span>Tatil</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hızlı Erişim -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="ri-list-check me-2"></i>Hızlı Erişim
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'duty_schedule:duty_list' %}" class="btn btn-outline-primary">
+                        <i class="ri-table-line me-2"></i>Liste Görünümü
+                    </a>
+                    <a href="{% url 'duty_schedule:sync_logs' %}" class="btn btn-outline-info">
+                        <i class="ri-history-line me-2"></i>Senkronizasyon Logları
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="ri-information-line me-2"></i>Bu Ay Özeti
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-primary">{{ duties|length }}</h4>
+                        <p class="text-muted mb-0">Toplam Nöbet</p>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-warning">
+                            {% for day, duty in duties.items %}
+                                {% if duty.is_weekend %}{{ forloop.counter0|add:1 }}{% endif %}
+                            {% endfor %}
+                        </h4>
+                        <p class="text-muted mb-0">Hafta Sonu</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Takvim hücrelerine hover efekti
+    $('.calendar-table td').hover(
+        function() {
+            if ($(this).find('.duty-info').length > 0) {
+                $(this).find('.duty-info').addClass('shadow-sm');
+            }
+        },
+        function() {
+            $(this).find('.duty-info').removeClass('shadow-sm');
+        }
+    );
+    
+    // Nöbet bilgisine tıklama
+    $('.duty-info').click(function() {
+        const dutyPerson = $(this).find('.duty-person').text();
+        const dutyContact = $(this).find('.duty-contact').text();
+        
+        if (dutyContact) {
+            const confirmCall = confirm(`${dutyPerson} kişisini aramak istiyor musunuz?\n${dutyContact}`);
+            if (confirmCall && dutyContact.match(/[\d\s\-\+$$$$]+/)) {
+                window.location.href = `tel:${dutyContact.replace(/\s/g, '')}`;
+            }
+        }
+    });
+    
+    // Bugünkü tarihi vurgula
+    $('.calendar-day.today').parent().addClass('border-primary border-2');
+});
+</script>
+{% endblock %}

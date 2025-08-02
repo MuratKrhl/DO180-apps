@@ -1,0 +1,36 @@
+/* Remix Icons - Essential icons */
+@import url("https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css");
+
+/* Bootstrap Icons fallback */
+.bx,
+.mdi,
+.ri {
+  font-family: "remixicon" !important;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Common icon mappings */
+.bx-user-check::before {
+  content: "\f007";
+}
+.mdi-magnify::before {
+  content: "\ea5b";
+}
+.mdi-close-circle::before {
+  content: "\ea52";
+}
+.mdi-account-circle::before {
+  content: "\ea01";
+}
+.mdi-cog-outline::before {
+  content: "\ea5a";
+}
+.mdi-logout::before {
+  content: "\ea5e";
+}

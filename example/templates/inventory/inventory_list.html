@@ -1,0 +1,636 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Envanter - Middleware Portal{% endblock %}
+{% block page_title %}Envanter Yönetimi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .inventory-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+    
+    .inventory-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: #405189;
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .table-actions {
+        white-space: nowrap;
+    }
+    
+    .bulk-actions {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    
+    .bulk-actions.show {
+        display: block;
+    }
+    
+    .migration-progress {
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #e9ecef;
+    }
+    
+    .migration-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #0ab39c, #405189);
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Üst İstatistik Kartları -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h3 class="mb-0">{{ stats.total_applications }}</h3>
+                        <p class="mb-0 opacity-75">Toplam Uygulama</p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-apps-line display-6 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #0ab39c 0%, #405189 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h3 class="mb-0">{{ stats.running_applications }}</h3>
+                        <p class="mb-0 opacity-75">Çalışan Uygulama</p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-play-circle-line display-6 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #f06548 0%, #f7b84b 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h3 class="mb-0">{{ stats.error_applications }}</h3>
+                        <p class="mb-0 opacity-75">Hatalı Uygulama</p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-error-warning-line display-6 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #299cdb 0%, #6f42c1 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h3 class="mb-0">{{ stats.jboss8_applications }}</h3>
+                        <p class="mb-0 opacity-75">JBoss 8 Uygulaması</p>
+                        <div class="migration-progress mt-2">
+                            <div class="migration-progress-bar" style="width: {% widthratio stats.jboss8_applications stats.total_applications 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="ri-rocket-line display-6 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtreleme Bölümü -->
+<div class="filter-section">
+    <form method="get" class="row g-3">
+        <div class="col-md-3">
+            {{ filter_form.search }}
+        </div>
+        <div class="col-md-2">
+            {{ filter_form.environment }}
+        </div>
+        <div class="col-md-2">
+            {{ filter_form.app_type }}
+        </div>
+        <div class="col-md-2">
+            {{ filter_form.status }}
+        </div>
+        <div class="col-md-2">
+            {{ filter_form.version }}
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="ri-search-line"></i>
+            </button>
+        </div>
+    </form>
+    
+    <!-- Aktif Filtreler -->
+    {% if active_filters.search or active_filters.environment or active_filters.app_type or active_filters.status or active_filters.version %}
+    <div class="mt-3">
+        <h6 class="mb-2">Aktif Filtreler:</h6>
+        <div class="d-flex flex-wrap gap-2">
+            {% if active_filters.search %}
+                <span class="badge bg-primary">Arama: {{ active_filters.search }}</span>
+            {% endif %}
+            {% if active_filters.environment %}
+                <span class="badge bg-info">Ortam: {{ active_filters.environment }}</span>
+            {% endif %}
+            {% if active_filters.app_type %}
+                <span class="badge bg-success">Tip: {{ active_filters.app_type }}</span>
+            {% endif %}
+            {% if active_filters.status %}
+                <span class="badge bg-warning">Durum: {{ active_filters.status }}</span>
+            {% endif %}
+            {% if active_filters.version %}
+                <span class="badge bg-secondary">Versiyon: {{ active_filters.version }}</span>
+            {% endif %}
+            <a href="{% url 'inventory:inventory_list' %}" class="badge bg-danger text-decoration-none">
+                <i class="ri-close-line"></i> Temizle
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Toplu İşlemler -->
+<div class="bulk-actions" id="bulk-actions">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <span id="selected-count">0</span> uygulama seçildi
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary" onclick="bulkStatusCheck()">
+                <i class="ri-refresh-line"></i> Durum Kontrol Et
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="bulkExport()">
+                <i class="ri-download-line"></i> Dışa Aktar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Ana Tablo -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title mb-0">
+            <i class="ri-list-check-2 me-2"></i>Envanter Listesi
+        </h4>
+        <div class="btn-group">
+            {% if perms.inventory.add_application %}
+            <a href="{% url 'inventory:application_add' %}" class="btn btn-primary">
+                <i class="ri-add-line"></i> Yeni Uygulama
+            </a>
+            {% endif %}
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="ri-more-line"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'inventory:export_inventory' %}?format=csv">
+                        <i class="ri-file-excel-line"></i> CSV Dışa Aktar
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="refreshAllStatus()">
+                        <i class="ri-refresh-line"></i> Tüm Durumları Yenile
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th width="40">
+                            <input type="checkbox" class="form-check-input" id="select-all">
+                        </th>
+                        <th>Uygulama</th>
+                        <th>Sunucu</th>
+                        <th>Tip</th>
+                        <th>Ortam</th>
+                        <th>Durum</th>
+                        <th>Migrasyon</th>
+                        <th>Kritiklik</th>
+                        <th>Son Kontrol</th>
+                        <th width="120">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for application in applications %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input row-select" value="{{ application.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-3">
+                                    <div class="avatar-sm bg-{{ application.status_color }}-subtle rounded">
+                                        <span class="avatar-title bg-{{ application.status_color }}-subtle text-{{ application.status_color }} rounded">
+                                            <i class="ri-apps-line"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <a href="{% url 'inventory:application_detail' application.id %}" class="text-decoration-none">
+                                            {{ application.name }}
+                                        </a>
+                                        {% if application.is_jboss8 %}
+                                            <span class="badge bg-success ms-1">JBoss 8</span>
+                                        {% endif %}
+                                    </h6>
+                                    <p class="text-muted mb-0 small">{{ application.version }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{% url 'inventory:server_detail' application.server.id %}" class="text-decoration-none">
+                                {{ application.server.hostname }}
+                            </a>
+                            <br>
+                            <small class="text-muted">{{ application.server.ip_address }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info-subtle text-info">
+                                {{ application.get_application_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ application.server.environment_color }}-subtle text-{{ application.server.environment_color }}">
+                                {{ application.server.get_environment_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ application.status_color }} status-badge" id="status-{{ application.id }}">
+                                {{ application.get_status_display }}
+                            </span>
+                            {% if application.response_time %}
+                                <br><small class="text-muted">{{ application.response_time|floatformat:0 }}ms</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ application.migration_status_color }}-subtle text-{{ application.migration_status_color }}">
+                                {{ application.get_migration_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ application.criticality_color }}-subtle text-{{ application.criticality_color }}">
+                                {{ application.get_criticality_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if application.last_check %}
+                                <small class="text-muted">
+                                    {{ application.last_check|timesince }} önce
+                                </small>
+                            {% else %}
+                                <small class="text-muted">Hiç kontrol edilmedi</small>
+                            {% endif %}
+                        </td>
+                        <td class="table-actions">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="ri-more-line"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'inventory:application_detail' application.id %}">
+                                            <i class="ri-eye-line"></i> Görüntüle
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="checkStatus({{ application.id }})">
+                                            <i class="ri-refresh-line"></i> Durum Kontrol Et
+                                        </a>
+                                    </li>
+                                    {% if perms.inventory.change_application %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'inventory:application_edit' application.id %}">
+                                            <i class="ri-edit-line"></i> Düzenle
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% if perms.inventory.delete_application %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="{% url 'inventory:application_delete' application.id %}">
+                                            <i class="ri-delete-bin-line"></i> Sil
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4">
+                            <i class="ri-inbox-line display-4 text-muted"></i>
+                            <h6 class="mt-3">Uygulama bulunamadı</h6>
+                            <p class="text-muted">Filtreleri değiştirmeyi deneyin veya yeni uygulama ekleyin.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Sayfalama -->
+        {% if is_paginated %}
+        <nav aria-label="Sayfa navigasyonu">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">İlk</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Önceki</a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Sonraki</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Son</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+class InventoryManager {
+    constructor() {
+        this.selectedItems = new Set();
+        this.init();
+    }
+    
+    init() {
+        this.bindEvents();
+        this.updateBulkActions();
+    }
+    
+    bindEvents() {
+        // Tümünü seç/seçme
+        document.getElementById('select-all').addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.row-select');
+            checkboxes.forEach(cb => {
+                cb.checked = e.target.checked;
+                if (e.target.checked) {
+                    this.selectedItems.add(cb.value);
+                } else {
+                    this.selectedItems.delete(cb.value);
+                }
+            });
+            this.updateBulkActions();
+        });
+        
+        // Satır seçimi
+        document.querySelectorAll('.row-select').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.selectedItems.add(e.target.value);
+                } else {
+                    this.selectedItems.delete(e.target.value);
+                }
+                this.updateBulkActions();
+                this.updateSelectAll();
+            });
+        });
+    }
+    
+    updateBulkActions() {
+        const bulkActions = document.getElementById('bulk-actions');
+        const selectedCount = document.getElementById('selected-count');
+        
+        if (this.selectedItems.size > 0) {
+            bulkActions.classList.add('show');
+            selectedCount.textContent = this.selectedItems.size;
+        } else {
+            bulkActions.classList.remove('show');
+        }
+    }
+    
+    updateSelectAll() {
+        const selectAll = document.getElementById('select-all');
+        const checkboxes = document.querySelectorAll('.row-select');
+        const checkedBoxes = document.querySelectorAll('.row-select:checked');
+        
+        if (checkedBoxes.length === 0) {
+            selectAll.indeterminate = false;
+            selectAll.checked = false;
+        } else if (checkedBoxes.length === checkboxes.length) {
+            selectAll.indeterminate = false;
+            selectAll.checked = true;
+        } else {
+            selectAll.indeterminate = true;
+        }
+    }
+}
+
+// Tekil durum kontrolü
+async function checkStatus(appId) {
+    const statusElement = document.getElementById(`status-${appId}`);
+    const originalText = statusElement.textContent;
+    
+    statusElement.innerHTML = '<i class="ri-loader-4-line spin"></i> Kontrol ediliyor...';
+    statusElement.className = 'badge bg-warning status-badge';
+    
+    try {
+        const response = await fetch(`/inventory/api/applications/${appId}/check-status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            statusElement.textContent = data.status_display;
+            statusElement.className = `badge bg-${data.status_color} status-badge`;
+            
+            // Toast bildirimi
+            showToast('Başarılı', `${data.status_display} durumu güncellendi`, 'success');
+        } else {
+            throw new Error('Durum kontrolü başarısız');
+        }
+    } catch (error) {
+        statusElement.textContent = originalText;
+        statusElement.className = 'badge bg-secondary status-badge';
+        showToast('Hata', 'Durum kontrolü sırasında hata oluştu', 'error');
+    }
+}
+
+// Toplu durum kontrolü
+async function bulkStatusCheck() {
+    const selectedIds = Array.from(inventoryManager.selectedItems);
+    
+    if (selectedIds.length === 0) {
+        showToast('Uyarı', 'Lütfen kontrol edilecek uygulamaları seçin', 'warning');
+        return;
+    }
+    
+    // Loading durumu
+    selectedIds.forEach(id => {
+        const statusElement = document.getElementById(`status-${id}`);
+        statusElement.innerHTML = '<i class="ri-loader-4-line spin"></i>';
+        statusElement.className = 'badge bg-warning status-badge';
+    });
+    
+    try {
+        const formData = new FormData();
+        selectedIds.forEach(id => formData.append('application_ids', id));
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        const response = await fetch('/inventory/api/applications/bulk-check/', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            data.results.forEach(result => {
+                const statusElement = document.getElementById(`status-${result.id}`);
+                statusElement.textContent = result.status_display;
+                statusElement.className = `badge bg-${result.status_color} status-badge`;
+            });
+            
+            showToast('Başarılı', `${data.results.length} uygulamanın durumu güncellendi`, 'success');
+        } else {
+            throw new Error('Toplu durum kontrolü başarısız');
+        }
+    } catch (error) {
+        showToast('Hata', 'Toplu durum kontrolü sırasında hata oluştu', 'error');
+    }
+}
+
+// Tüm durumları yenile
+async function refreshAllStatus() {
+    const allCheckboxes = document.querySelectorAll('.row-select');
+    allCheckboxes.forEach(cb => cb.checked = true);
+    
+    inventoryManager.selectedItems.clear();
+    allCheckboxes.forEach(cb => inventoryManager.selectedItems.add(cb.value));
+    inventoryManager.updateBulkActions();
+    
+    await bulkStatusCheck();
+}
+
+// Toast bildirimi
+function showToast(title, message, type = 'info') {
+    // Bootstrap toast implementasyonu
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white bg-${type === 'error' ? 'danger' : type}" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}:</strong> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Toast'ı otomatik temizle
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1055';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Sayfa yüklendiğinde başlat
+document.addEventListener('DOMContentLoaded', () => {
+    window.inventoryManager = new InventoryManager();
+});
+
+// Auto-refresh her 5 dakikada bir
+setInterval(() => {
+    // Sadece görünür uygulamaların durumunu kontrol et
+    const visibleApps = document.querySelectorAll('.row-select');
+    if (visibleApps.length > 0 && visibleApps.length <= 10) {
+        visibleApps.forEach(cb => {
+            checkStatus(cb.value);
+        });
+    }
+}, 300000); // 5 dakika
+</script>
+{% endblock %}

@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Duyurular & Planlı Çalışmalar{% endblock %}
+{% block page_title %}Duyurular & Planlı Çalışmalar{% endblock %}
+
+{% block extra_css %}
+<style>
+    .announcement-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #e9ecef;
+    }
+    
+    .announcement-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .announcement-card.urgent {
+        border-left-color: #dc3545;
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+    }
+    
+    .announcement-card.pinned {
+        border-left-color: #ffc107;
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+    }
+    
+    .announcement-card.maintenance {
+        border-left-color: #6c757d;
+    }
+    
+    .announcement-card.planned_work {
+        border-left-color: #0d6efd;
+    }
+    
+    .priority-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .announcement-meta {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .announcement-content {
+        max-height: 100px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .announcement-content::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: linear-gradient(transparent, white);
+    }
+    
+    .filter-card {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+    }
+    
+    .urgent-banner {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        border-radius: 8px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    .pinned-section {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        border-radius: 8px;
+        border: 1px solid #fdcb6e;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Ana Sayfa</a></li>
+<li class="breadcrumb-item active">Duyurular & Planlı Çalışmalar</li>
+{% endblock %}
+
+{% block content %}
+<!-- Acil Duyurular Banner -->
+{% if urgent_announcements %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="urgent-banner p-4">
+            <div class="d-flex align-items-center mb-3">
+                <i class="ri-alarm-warning-line fs-24 me-2"></i>
+                <h4 class="mb-0">🚨 Acil Duyurular</h4>
+            </div>
+            {% for announcement in urgent_announcements %}
+            <div class="d-flex align-items-center justify-content-between {% if not forloop.last %}mb-3 pb-3 border-bottom border-light{% endif %}">
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                        <a href="{{ announcement.get_absolute_url }}" class="text-white text-decoration-none">
+                            <i class="{{ announcement.type_icon }} me-1"></i>
+                            {{ announcement.title }}
+                        </a>
+                    </h6>
+                    <small class="opacity-75">
+                        <i class="ri-time-line me-1"></i>{{ announcement.start_date|date:"d.m.Y H:i" }}
+                        {% if announcement.work_date %}
+                        | <i class="ri-calendar-event-line me-1"></i>Çalışma: {{ announcement.work_date|date:"d.m.Y H:i" }}
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="flex-shrink-0">
+                    <span class="badge bg-light text-dark">{{ announcement.get_announcement_type_display }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Sabitlenmiş Duyurular -->
+{% if pinned_announcements %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="pinned-section p-4">
+            <div class="d-flex align-items-center mb-3">
+                <i class="ri-pushpin-line fs-20 me-2"></i>
+                <h5 class="mb-0 text-dark">📌 Sabitlenmiş Duyurular</h5>
+            </div>
+            <div class="row">
+                {% for announcement in pinned_announcements %}
+                <div class="col-md-6 mb-2">
+                    <div class="d-flex align-items-center">
+                        <i class="{{ announcement.type_icon }} text-primary me-2"></i>
+                        <a href="{{ announcement.get_absolute_url }}" class="text-decoration-none text-dark fw-medium">
+                            {{ announcement.title|truncatechars:50 }}
+                        </a>
+                        <span class="badge bg-primary ms-2">{{ announcement.get_priority_display }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- İstatistikler ve Filtreler -->
+<div class="row mb-4">
+    <!-- İstatistikler -->
+    <div class="col-lg-3">
+        <div class="stats-card p-4 text-center">
+            <h3 class="mb-1">{{ stats.total }}</h3>
+            <p class="mb-2">Toplam Duyuru</p>
+            <div class="row text-center">
+                <div class="col-6">
+                    <small class="d-block">{{ stats.published }} Yayında</small>
+                </div>
+                <div class="col-6">
+                    <small class="d-block">{{ stats.urgent }} Acil</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtreler -->
+    <div class="col-lg-9">
+        <div class="filter-card p-4">
+            <h5 class="mb-3">
+                <i class="ri-filter-3-line me-2"></i>Filtreler
+            </h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    {{ filter_form.search }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.announcement_type }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.priority }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.related_product }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.date_range }}
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="ri-search-line"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Duyuru Listesi -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="ri-notification-3-line me-2"></i>
+                    Duyurular 
+                    <span class="badge bg-primary">{{ page_obj.paginator.count }}</span>
+                </h4>
+                {% if perms.announcements.add_announcement %}
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#quickCreateModal">
+                        <i class="ri-add-line me-1"></i>Hızlı Ekle
+                    </button>
+                    <a href="{% url 'announcements:announcement_create' %}" class="btn btn-primary btn-sm">
+                        <i class="ri-add-line me-1"></i>Yeni Duyuru
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if page_obj %}
+                    {% for announcement in page_obj %}
+                    <div class="announcement-card card mb-4 {% if announcement.is_urgent %}urgent{% elif announcement.is_pinned %}pinned{% endif %} {{ announcement.announcement_type }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="{{ announcement.type_icon }} fs-18 me-2 text-{{ announcement.announcement_type }}"></i>
+                                        <h5 class="mb-0">
+                                            <a href="{{ announcement.get_absolute_url }}" class="text-decoration-none">
+                                                {{ announcement.title }}
+                                            </a>
+                                        </h5>
+                                        {% if announcement.is_pinned %}
+                                        <i class="ri-pushpin-fill text-warning ms-2" title="Sabitlenmiş"></i>
+                                        {% endif %}
+                                        {% if announcement.is_urgent %}
+                                        <span class="badge bg-danger ms-2">Acil</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if announcement.summary %}
+                                    <p class="text-muted mb-2">{{ announcement.summary }}</p>
+                                    {% else %}
+                                    <div class="announcement-content">
+                                        {{ announcement.content|striptags|truncatechars:150 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="flex-shrink-0 text-end">
+                                    <div class="d-flex gap-2 mb-2">
+                                        <span class="badge bg-{{ announcement.announcement_type }}-subtle text-{{ announcement.announcement_type }}">
+                                            {{ announcement.get_announcement_type_display }}
+                                        </span>
+                                        <span class="priority-badge badge bg-{{ announcement.priority }}-subtle text-{{ announcement.priority }}">
+                                            {{ announcement.get_priority_display }}
+                                        </span>
+                                        <span class="badge {{ announcement.status_badge_class }}">
+                                            {{ announcement.get_status_display }}
+                                        </span>
+                                    </div>
+                                    
+                                    {% if perms.announcements.change_announcement %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="ri-more-2-line"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{{ announcement.get_absolute_url }}">
+                                                <i class="ri-eye-line me-2"></i>Görüntüle
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="{% url 'announcements:announcement_edit' announcement.pk %}">
+                                                <i class="ri-edit-line me-2"></i>Düzenle
+                                            </a></li>
+                                            {% if announcement.status == 'draft' %}
+                                            <li><a class="dropdown-item text-success" href="#" onclick="publishAnnouncement({{ announcement.pk }})">
+                                                <i class="ri-send-plane-line me-2"></i>Yayınla
+                                            </a></li>
+                                            {% elif announcement.status == 'published' %}
+                                            <li><a class="dropdown-item text-warning" href="#" onclick="archiveAnnouncement({{ announcement.pk }})">
+                                                <i class="ri-archive-line me-2"></i>Arşivle
+                                            </a></li>
+                                            {% endif %}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="{% url 'announcements:announcement_delete' announcement.pk %}">
+                                                <i class="ri-delete-bin-line me-2"></i>Sil
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Meta Bilgiler -->
+                            <div class="announcement-meta d-flex justify-content-between align-items-center">
+                                <div class="d-flex gap-4">
+                                    <small>
+                                        <i class="ri-time-line me-1"></i>
+                                        {{ announcement.start_date|date:"d.m.Y H:i" }}
+                                    </small>
+                                    {% if announcement.work_date %}
+                                    <small class="text-primary">
+                                        <i class="ri-calendar-event-line me-1"></i>
+                                        Çalışma: {{ announcement.work_date|date:"d.m.Y H:i" }}
+                                    </small>
+                                    {% endif %}
+                                    {% if announcement.end_date %}
+                                    <small class="text-warning">
+                                        <i class="ri-time-line me-1"></i>
+                                        Bitiş: {{ announcement.end_date|date:"d.m.Y H:i" }}
+                                    </small>
+                                    {% endif %}
+                                    <small>
+                                        <i class="ri-user-line me-1"></i>
+                                        {{ announcement.author.get_full_name|default:announcement.author.username }}
+                                    </small>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <small>
+                                        <i class="ri-eye-line me-1"></i>
+                                        {{ announcement.view_count }} görüntülenme
+                                    </small>
+                                    <small>
+                                        <i class="ri-message-3-line me-1"></i>
+                                        {{ announcement.comments.count }} yorum
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Sayfa navigasyonu" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="ri-arrow-left-line"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="ri-arrow-right-line"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="ri-notification-3-line display-4 text-muted"></i>
+                        <h5 class="mt-3">Duyuru bulunamadı</h5>
+                        <p class="text-muted">Arama kriterlerinizi değiştirerek tekrar deneyin.</p>
+                        {% if perms.announcements.add_announcement %}
+                        <a href="{% url 'announcements:announcement_create' %}" class="btn btn-primary">
+                            <i class="ri-add-line me-1"></i>İlk Duyuruyu Oluştur
+                        </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hızlı Oluşturma Modal -->
+{% if perms.announcements.add_announcement %}
+<div class="modal fade" id="quickCreateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ri-add-line me-2"></i>Hızlı Duyuru Oluştur
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="quickCreateContent">
+                <!-- AJAX ile yüklenecek -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Hızlı oluşturma modal'ı
+{% if perms.announcements.add_announcement %}
+document.getElementById('quickCreateModal').addEventListener('show.bs.modal', function() {
+    fetch('{% url "announcements:announcement_quick_create" %}', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('quickCreateContent').innerHTML = data.html;
+    });
+});
+
+// Hızlı işlemler
+function publishAnnouncement(id) {
+    if (confirm('Bu duyuruyu yayınlamak istediğinizden emin misiniz?')) {
+        // AJAX ile yayınlama işlemi
+        fetch(`/announcements/${id}/publish/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function archiveAnnouncement(id) {
+    if (confirm('Bu duyuruyu arşivlemek istediğinizden emin misiniz?')) {
+        // AJAX ile arşivleme işlemi
+        fetch(`/announcements/${id}/archive/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+{% endif %}
+
+// Auto-refresh için
+setInterval(() => {
+    // Acil duyuruları kontrol et
+    fetch('{% url "announcements:announcement_api_list" %}')
+    .then(response => response.json())
+    .then(data => {
+        // Yeni acil duyuru varsa bildirim göster
+        const urgentCount = data.announcements.filter(a => a.is_urgent).length;
+        if (urgentCount > {{ urgent_announcements|length }}) {
+            // Toast notification göster
+            showNotification('Yeni acil duyuru var!', 'warning');
+        }
+    });
+}, 300000); // 5 dakikada bir
+
+function showNotification(message, type) {
+    // Toast notification implementasyonu
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="ri-notification-3-line me-2"></i>
+            ${message}
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

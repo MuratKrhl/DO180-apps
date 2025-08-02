@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ question.title }} - AskGT{% endblock %}
+{% block page_title %}{{ question.title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Ana Sayfa</a></li>
+<li class="breadcrumb-item"><a href="{% url 'askgt:question_list' %}">AskGT</a></li>
+<li class="breadcrumb-item active">{{ question.title|truncatechars:30 }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Soru Detayı -->
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h4 class="card-title mb-2">{{ question.title }}</h4>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-{{ question.priority }}-subtle text-{{ question.priority }}">
+                                {{ question.get_priority_display }}
+                            </span>
+                            <span class="badge bg-light text-dark">
+                                <i class="{{ question.category.icon }}"></i> {{ question.category.name }}
+                            </span>
+                            {% if question.is_featured %}
+                            <span class="badge bg-warning-subtle text-warning">
+                                <i class="ri-star-line"></i> Öne Çıkan
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted d-block">
+                            <i class="ri-eye-line"></i> {{ question.view_count }} görüntülenme
+                        </small>
+                        <small class="text-muted">
+                            <i class="ri-time-line"></i> {{ question.created_at|date:"d.m.Y H:i" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Soru -->
+                <div class="mb-4">
+                    <h6 class="text-primary mb-3">
+                        <i class="ri-question-line"></i> Soru
+                    </h6>
+                    <div class="bg-light p-3 rounded">
+                        {{ question.question|linebreaks }}
+                    </div>
+                </div>
+                
+                <!-- Cevap -->
+                <div class="mb-4">
+                    <h6 class="text-success mb-3">
+                        <i class="ri-check-line"></i> Cevap
+                    </h6>
+                    <div class="border-start border-success border-3 ps-3">
+                        {{ question.answer|linebreaks }}
+                    </div>
+                </div>
+                
+                <!-- Etiketler -->
+                {% if question.get_tags_list %}
+                <div class="mb-4">
+                    <h6 class="mb-3">
+                        <i class="ri-price-tag-3-line"></i> Etiketler
+                    </h6>
+                    {% for tag in question.get_tags_list %}
+                    <span class="badge bg-secondary-subtle text-secondary me-2 mb-1">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Meta Bilgiler -->
+                <div class="border-top pt-3">
+                    <div class="row text-muted small">
+                        <div class="col-md-6">
+                            <i class="ri-time-line"></i> Oluşturulma: {{ question.created_at|date:"d.m.Y H:i" }}
+                        </div>
+                        <div class="col-md-6">
+                            <i class="ri-refresh-line"></i> Güncellenme: {{ question.updated_at|date:"d.m.Y H:i" }}
+                        </div>
+                        {% if question.created_by %}
+                        <div class="col-md-6 mt-1">
+                            <i class="ri-user-line"></i> Oluşturan: {{ question.created_by.get_full_name|default:question.created_by.username }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- İlgili Sorular -->
+        {% if related_questions %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="ri-links-line"></i> İlgili Sorular
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for related in related_questions %}
+                <div class="d-flex mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                    <div class="flex-shrink-0">
+                        <span class="badge bg-{{ related.priority }}-subtle text-{{ related.priority }} badge-sm">
+                            {{ related.get_priority_display }}
+                        </span>
+                    </div>
+                    <div class="flex-grow-1 ms-2">
+                        <h6 class="mb-1 fs-14">
+                            <a href="{% url 'askgt:question_detail' related.pk %}" class="text-decoration-none">
+                                {{ related.title|truncatechars:60 }}
+                            </a>
+                        </h6>
+                        <small class="text-muted">
+                            <i class="ri-eye-line"></i> {{ related.view_count }} görüntülenme
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Kategori Bilgisi -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="{{ question.category.icon }}"></i> {{ question.category.name }}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if question.category.description %}
+                <p class="text-muted mb-3">{{ question.category.description }}</p>
+                {% endif %}
+                <a href="{% url 'askgt:question_list' %}?category={{ question.category.id }}" class="btn btn-outline-primary btn-sm">
+                    <i class="ri-folder-line"></i> Bu Kategorideki Diğer Sorular
+                </a>
+            </div>
+        </div>
+        
+        <!-- Geri Dön -->
+        <div class="card">
+            <div class="card-body text-center">
+                <a href="{% url 'askgt:question_list' %}" class="btn btn-secondary">
+                    <i class="ri-arrow-left-line"></i> Soru Listesine Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

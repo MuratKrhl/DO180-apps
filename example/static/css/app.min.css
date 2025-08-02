@@ -1,0 +1,192 @@
+/* Velzon Theme - Main Application Styles */
+:root {
+  --vz-primary: #405189;
+  --vz-secondary: #74788d;
+  --vz-success: #0ab39c;
+  --vz-info: #299cdb;
+  --vz-warning: #f7b84b;
+  --vz-danger: #f06548;
+  --vz-light: #f3f3f9;
+  --vz-dark: #212529;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  color: #495057;
+  background-color: #f3f3f9;
+}
+
+/* Layout Wrapper */
+#layout-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Styles */
+#page-topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1002;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(15, 34, 58, 0.12);
+  transition: all 0.3s ease;
+}
+
+.navbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 70px;
+}
+
+/* Sidebar Styles */
+.app-menu {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  bottom: 0;
+  width: 250px;
+  background-color: #2a3042;
+  z-index: 1001;
+  transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link {
+  color: #a6b0cf;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-nav .nav-link i {
+  margin-right: 10px;
+  font-size: 16px;
+}
+
+/* Main Content */
+.main-content {
+  margin-left: 250px;
+  margin-top: 70px;
+  min-height: calc(100vh - 70px);
+  transition: all 0.3s ease;
+}
+
+.page-content {
+  padding: 24px;
+}
+
+/* Cards */
+.card {
+  background-color: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(15, 34, 58, 0.12);
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid #e9ecef;
+  padding: 20px 24px;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 4px;
+  font-weight: 500;
+  padding: 8px 20px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--vz-primary);
+  border-color: var(--vz-primary);
+}
+
+.btn-primary:hover {
+  background-color: #364574;
+  border-color: #364574;
+}
+
+/* Tables */
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  border-top: none;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* Search */
+.app-search {
+  position: relative;
+  margin: 0 20px;
+}
+
+.app-search .form-control {
+  background-color: #f3f6f9;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding-left: 40px;
+  width: 300px;
+}
+
+.search-widget-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: #74788d;
+}
+
+/* Responsive */
+@media (max-width: 991.98px) {
+  .app-menu {
+    transform: translateX(-100%);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .app-search {
+    display: none !important;
+  }
+}
+
+/* Menu Title */
+.menu-title {
+  color: #74788d;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 20px 24px 10px;
+  margin: 0;
+}
+
+/* Footer */
+.footer {
+  background-color: #fff;
+  border-top: 1px solid #e9ecef;
+  padding: 20px 0;
+  margin-top: auto;
+}

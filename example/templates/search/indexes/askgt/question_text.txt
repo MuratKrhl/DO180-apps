@@ -1,0 +1,5 @@
+{{ object.title }}
+{{ object.question }}
+{{ object.answer }}
+{{ object.category.name }}
+{{ object.tags }}
